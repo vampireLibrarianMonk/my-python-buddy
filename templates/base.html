@@ -1,0 +1,45 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}my-python-buddy{% endblock %}</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <!-- Pull in the base stylesheet for a consistent layout -->
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+</head>
+<body>
+  <header class="navbar">
+    <nav class="navwrap">
+      <!-- Project branding always links back to home -->
+      <a class="brand" href="/">my-python-buddy</a>
+      <ul class="nav">
+        <!-- Keep navigation light for time being we will keep just upload page for now -->
+        <li><a href="/">Upload</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <!-- Flash messaging from Django (success, error, info) -->
+    {% if messages %}
+      <div class="messages">
+        {% for message in messages %}
+          <!-- Apply Django’s tag classes so alerts style correctly -->
+          <div class="alert {{ message.tags|default:'info' }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Content drop from child elements -->
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <!-- Year update without additional editing. -->
+      <small>{% now "Y" %} SWENG 894 Capstone</small>
+    </div>
+  </footer>
+</body>
+</html>

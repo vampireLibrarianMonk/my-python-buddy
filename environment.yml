@@ -33,3 +33,5 @@ dependencies:
   - typing_extensions=4.15.0
   - tzdata=2025b
   - wheel=0.45.1
+  - pip:
+      - python-dotenv==1.1.1

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Analyze code · my-python-buddy{% endblock %}
+
+{% block content %}
+  <h1>Analyze code</h1>
+  <!-- User Context: Display file under analysis and which static code analyzers were chosen -->
+  <p class="muted">File: <code>{{ file_name }}</code> · Selected: {{ selected_analyzers|join:", " }}</p>
+
+  <div class="split">
+    <!-- Left pane: displays code along with line numbers -->
+    <section class="pane code-pane" aria-label="Source code">
+      <header class="pane-header">
+        <strong>Source</strong>
+        <!-- User has option for a download link -->
+        <a class="link" href="{{ file_url }}" target="_blank" rel="noopener">Download</a>
+      </header>
+
+      <ol class="codeblock">
+        {% for line in code_lines %}
+          <li><code>{{ line }}</code></li>
+        {% empty %}
+          <li><code>(file is empty)</code></li>
+        {% endfor %}
+      </ol>
+    </section>
+
+    <!-- Right pane: displays the security and future LLM results -->
+    <section class="pane results-pane" aria-label="Analysis results">
+      <header class="pane-header">
+        <!-- Working placemarker title -->
+        <strong>Static Code Analysis Results (pre-integration preview)</strong>
+      </header>
+
+      <!-- Introduce user to the results -->
+      <div class="results-help card">
+        <p>
+          This pane displays <em>static code analysis</em> findings. Each item lists a severity, rule identifier,
+          short title, explanation, and a source location (line/column).
+          Once tool integration is complete (Bandit, Semgrep, MyPy, Vulture, etc.),
+          users will see each tool’s output here in a consistent format.
+        </p>
+      </div>
+
+      <!-- Main body results -->
+      <div class="results card">
+        <h3>Summary</h3>
+        <ul>
+          <li><strong>File:</strong> {{ results.summary.file }}</li>
+          <li><strong>Analyzers requested:</strong> {{ results.summary.analyzers_requested|join:", " }}</li>
+          <li><strong>Notes:</strong> {{ results.summary.notes }}</li>
+        </ul>
+
+        <h3>Findings (sample)</h3>
+        <ol class="findings-list">
+          {% for f in results.findings %}
+            <li class="finding">
+              <div>
+                <strong>{{ f.analyzer }}</strong> ·
+                <span class="sev sev-{{ f.severity|lower }}">{{ f.severity }}</span> ·
+                <code>{{ f.rule_id }}</code>
+              </div>
+              <div class="title">{{ f.title }}</div>
+              <div class="msg">{{ f.message }}</div>
+              <div class="loc">Location: line {{ f.location.line }}, col {{ f.location.column }}</div>
+              <div class="ref"><a class="link" href="{{ f.reference }}" target="_blank" rel="noopener">Reference</a></div>
+            </li>
+          {% empty %}
+            <!-- No state when there are no results -->
+            <li>No findings (sample placeholder).</li>
+          {% endfor %}
+        </ol>
+
+        <h3>How to read</h3>
+        <!-- User guidance on interpretation of results -->
+        <p>{{ results.how_to_read }}</p>
+
+        <!-- LLM Placemarker -->
+        {% if results.llm_placemarker.text %}
+          <p>{{ results.llm_placemarker.text }}</p>
+        {% else %}
+          <p class="muted"><em>No LLM notes were provided for this run.</em></p>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+{% endblock %}

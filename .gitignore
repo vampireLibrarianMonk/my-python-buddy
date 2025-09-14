@@ -1,0 +1,17 @@
+# Environment Setup Files
+.env
+
+# Database
+db.sqlite3
+
+# Collected static assets built from collectstatic
+staticfiles/
+
+# Files Uploaded By User
+media/
+
+# Development Environment
+.idea
+
+# Compiled Python Files
+*.pyc

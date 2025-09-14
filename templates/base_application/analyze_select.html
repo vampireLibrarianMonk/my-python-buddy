@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Select analyzers · my-python-buddy{% endblock %}
+
+{% block content %}
+  <h1>Select analyzers</h1>
+  <!-- Display filename upon initiating analysis for user context -->
+  <p class="muted">File: <code>{{ file_name }}</code></p>
+
+  <div class="card">
+    <form method="post" action="">
+      {% csrf_token %}
+      {{ form.file_name }}  {# hidden field to carry saved_name across requests #}
+
+      <!-- Allow user to select one or more tools to run on the .py file -->
+      <label for="{{ form.analyzers.id_for_label }}">Analyzers</label>
+      {{ form.analyzers }}
+      {% if form.analyzers.help_text %}
+        <div class="muted small">{{ form.analyzers.help_text }}</div>
+      {% endif %}
+      {% if form.analyzers.errors %}
+        <!-- Error messages appear below the selector -->
+        <div class="errors">{{ form.analyzers.errors }}</div>
+      {% endif %}
+
+      <!-- Primary user actions (1) Submission for file analysis or (2) Return to upload page -->
+      <div style="margin-top:.8rem;">
+        <button class="btn" type="submit">Run analysis</button>
+        <a class="btn" href="{% url 'upload' %}">Back</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

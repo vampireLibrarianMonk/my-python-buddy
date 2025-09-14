@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Upload a Python file · my-python-buddy{% endblock %}
+
+{% block content %}
+  <h1>Submit a Python file</h1>
+
+  <!-- Upload form: Will only accept .py files -->
+  <form method="post" enctype="multipart/form-data" class="card card--narrow" novalidate>
+    {% csrf_token %}
+    <div class="field">
+      <label for="{{ form.file.id_for_label }}">Choose .py file</label>
+      {{ form.file }}
+      {% if form.file.errors %}
+        <!-- Only display the field-level errors below the file input -->
+        <div class="errors">{{ form.file.errors }}</div>
+      {% endif %}
+    </div>
+    <button type="submit" class="btn">Upload</button>
+  </form>
+
+  <!-- List the previous uploads below the form -->
+  <div class="card card--wide" style="margin-top:1rem;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h2 style="margin:0;">Previous uploads</h2>
+      <!-- Enable table length control -->
+      <form method="get" class="inline">
+        <label for="ps">Rows per page:</label>
+        <input type="number" id="ps" name="ps" value="{{ page_size }}" min="1" max="100" style="width:5rem;">
+        <button class="btn" type="submit">Apply</button>
+      </form>
+    </div>
+
+    {% if page_obj.object_list %}
+      <div class="tablewrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>SHA-256 (short)</th>
+              <th>Filename</th>
+              <th>Uploaded (DTG)</th>
+              <th>View</th>
+              <th>Analysis</th>
+              <th style="width:1%;">Delete</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in page_obj.object_list %}
+              <tr>
+                <!-- Abbreviate the hash so that the table is readable, however have a tool tip to show full hash -->
+                <td><code title="{{ item.sha256 }}">{{ item.sha256|slice:":12" }}…</code></td>
+                <td>
+                  <div>{{ item.saved_name }}</div>
+                  <div class="muted small">orig: {{ item.original_name }}</div>
+                </td>
+                <td><code>{{ item.uploaded_at|date:"Y-m-d_H-i-s" }}</code></td>
+                <td><a class="link" href="{{ item.file.url }}" target="_blank" rel="noopener">View/Download</a></td>
+                <td>
+                  <!-- Analysis status' enabled with badges + actions -->
+                  {% if item.analysis_status == "COMPLETE" %}
+                    <span class="badge badge-success">Complete</span>
+                    <span class="muted small">({{ item.analysis_findings }} findings)</span>
+                    {% if item.analysis_analyzers %}
+                      <div class="muted small">with: {{ item.analysis_analyzers }}</div>
+                    {% endif %}
+                    <div style="margin-top:.35rem;">
+                      <a class="btn" href="{% url 'analyze_file' item.sha256 %}">Re-run</a>
+                    </div>
+                  {% elif item.analysis_status == "FAILED" %}
+                    <span class="badge badge-failed">Failed</span>
+                    {% if item.analysis_analyzers %}
+                      <div class="muted small">with: {{ item.analysis_analyzers }}</div>
+                    {% endif %}
+                    <div style="margin-top:.35rem;">
+                      <a class="btn" href="{% url 'analyze_file' item.sha256 %}">Try again</a>
+                    </div>
+                  {% else %}
+                    <span class="badge badge-idle">Not requested</span>
+                    <div style="margin-top:.35rem;">
+                      <a class="btn" href="{% url 'analyze_file' item.sha256 %}">Analyze</a>
+                    </div>
+                  {% endif %}
+                </td>
+                <td>
+                  <!-- Deletion method with a confirmation to prevent the user from accidentally deleting entries-->
+                  <form method="post" action="{% url 'delete_file' item.sha256 %}?ps={{ page_size }}&page={{ page_obj.number }}" onsubmit="return confirm('Delete this file? This cannot be undone.');">
+                    {% csrf_token %}
+                    <button class="btn" type="submit" title="Delete">🗑️</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Enable navigation amongst results -->
+      <div class="pager">
+        {% if page_obj.has_previous %}
+          <a class="btn" href="?page={{ page_obj.previous_page_number }}&ps={{ page_size }}">← Prev</a>
+        {% else %}
+          <span class="btn disabled">← Prev</span>
+        {% endif %}
+
+        <span class="muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+        {% if page_obj.has_next %}
+          <a class="btn" href="?page={{ page_obj.next_page_number }}&ps={{ page_size }}">Next →</a>
+        {% else %}
+          <span class="btn disabled">Next →</span>
+        {% endif %}
+      </div>
+    {% else %}
+      <!-- When no uploads exist have an empty state-->
+      <p class="muted">No uploads yet.</p>
+    {% endif %}
+  </div>
+{% endblock %}
