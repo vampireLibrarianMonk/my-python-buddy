@@ -76,7 +76,7 @@ python manage.py test base_application.tests.test_upload -v 2
 ```bash
 python manage.py test base_application.tests.test_upload.UploadViewTests -v 2
 ```
-`
+
 ### Run a single test
 ```bash
 python manage.py test base_application.tests.test_upload.UploadViewTests.test_accepts_valid_py -v 2
