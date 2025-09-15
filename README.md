@@ -63,18 +63,27 @@ This project will accumulate software tests in the form of acceptance, integrati
 ## Command-line Usage
 
 ### Run all tests
+```bash
 python manage.py test
+```
 
 ### Run only a single test `test_upload`
+```bash
 python manage.py test base_application.tests.test_upload -v 2
+````
 
 ### Run a single test class 
+```bash
 python manage.py test base_application.tests.test_upload.UploadViewTests -v 2
-
+```
+`
 ### Run a single test
+```bash
 python manage.py test base_application.tests.test_upload.UploadViewTests.test_accepts_valid_py -v 2
+```
 
 ### Useful flags for efficiency and speed of execution
+```bash
 python manage.py test --keepdb       # faster runs by re-using database
 python manage.py test --parallel 4   # parallel execution
 ```
