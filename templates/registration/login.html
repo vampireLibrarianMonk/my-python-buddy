@@ -1,0 +1,28 @@
+{% extends "base.html" %} {# Use the site-wide layout (header, footer, CSS) #}
+{% block title %}Sign in{% endblock %}
+
+{% block content %}
+<h1>Sign in</h1>
+
+{# CSRF-protected login form handled by Django's built-in LoginView #}
+<form method="post" class="card card--narrow">
+  {% csrf_token %} {# Required for all POST forms #}
+
+  {{ form.non_field_errors }} {# e.g., incorrect credentials message #}
+
+  <div class="field">
+    <label for="{{ form.username.id_for_label }}">Username</label>
+    {{ form.username }} {# AuthenticationForm.username widget #}
+  </div>
+
+  <div class="field">
+    <label for="{{ form.password.id_for_label }}">Password</label>
+    {{ form.password }} {# Password input; never prefilled #}
+  </div>
+
+  {# If user was redirected here, send them back after login #}
+  {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+  <button class="btn" type="submit">Sign in</button>
+</form>
+{% endblock %}

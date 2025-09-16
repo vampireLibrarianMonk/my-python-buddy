@@ -57,6 +57,38 @@ python manage.py collectstatic --noinput
 python manage.py runserver
 ```
 
+# User Setup
+Create an admin account for Django's built-in authentication, administration and login system.
+```bash
+python manage.py createsuperuser
+````
+
+Start the development server (default: http://localhost:8000)
+```bash
+python manage.py runserver
+```
+
+Choose a username for the superuser, default is your username.
+```bash
+Username (leave blank to use '$USER'): 
+```
+
+# Optional Email (only for when site has email server capability)
+```bash
+Email address: pmf141@psu.edu
+```
+
+# Set the superuser's password and then confirm it.
+```bash
+Password: 
+Password (again): 
+```
+
+Confirmation of successfully created account
+```bash
+Superuser created successfully.
+```
+
 # Testing
 This project will accumulate software tests in the form of acceptance, integration and unit tests as it progresses. Before using read teh command line usage below and the pydoc with each test file, class and method under the `base_application/tests` directory. 
 

@@ -46,8 +46,24 @@ CSRF_TRUSTED_ORIGINS = [
     o for o in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o
 ]
 
-# Application definition
+# Redirects
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
 
+# Logout users after 30 minutes of being inactive
+SESSION_COOKIE_AGE = 30 * 60          # 1800 seconds
+SESSION_SAVE_EVERY_REQUEST = True     # refresh expiry on each request
+
+# Session will expire when the browser closes
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# Future HTTPS settings TODO
+# SECURE_SSL_REDIRECT = True
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
+
+# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

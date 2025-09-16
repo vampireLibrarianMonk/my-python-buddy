@@ -18,6 +18,7 @@ from django.shortcuts import render, redirect
 from django.conf import settings
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
+from django.contrib.auth.decorators import login_required
 
 # Local
 from .forms import UploadPyForm, AnalyzerSelectForm
@@ -97,6 +98,7 @@ def _sha256_of_upload(uploaded_file) -> str:
         hasher.update(chunk)
     return hasher.hexdigest()
 
+@login_required
 @require_http_methods(["GET", "POST"])
 def upload_view(request):
     # --- Handle upload ---
@@ -159,6 +161,7 @@ def upload_view(request):
         },
     )
 
+@login_required
 @require_http_methods(["POST"])
 def delete_file_view(request, sha256):
     """Delete DB record and the stored file. Requires POST + CSRF; confirms in UI."""
@@ -173,6 +176,7 @@ def delete_file_view(request, sha256):
     page = request.GET.get("page", "1")
     return redirect(f"{reverse('upload')}?ps={ps}&page={page}")
 
+@login_required
 @require_http_methods(["GET"])
 def upload_success_view(request):
     saved_name = request.GET.get("f")
@@ -196,6 +200,7 @@ def upload_success_view(request):
         {"file_name": saved_name, "file_url": file_url, "sha256": sha256},
     )
 
+@login_required
 @require_http_methods(["GET"])
 def healthcheck_view(request):
     """
@@ -211,6 +216,7 @@ def healthcheck_view(request):
         "time": time.time(),
     })
 
+@login_required
 @require_http_methods(["GET", "POST"])
 def analyze_file_view(request, sha256: str):
     obj = get_object_or_404(SubmittedFile, pk=sha256)

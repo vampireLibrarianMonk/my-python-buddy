@@ -153,4 +153,15 @@ input[type="file"] { padding: .5rem 0; }
 .badge-success { background: #e6ffed; border-color: #86efac; }
 .badge-failed { background: #fee2e2; border-color: #fca5a5; }
 
+/* Button to look like hyperlink */
+.btn-link {
+  border: 0;
+  background: none;
+  color: var(--ink);
+  padding: 0;
+  cursor: pointer;
+}
+.btn-link:hover { text-decoration: underline; }
+
+
 

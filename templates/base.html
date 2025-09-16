@@ -13,10 +13,22 @@
     <nav class="navwrap">
       <!-- Project branding always links back to home -->
       <a class="brand" href="/">my-python-buddy</a>
-      <ul class="nav">
-        <!-- Keep navigation light for time being we will keep just upload page for now -->
-        <li><a href="/">Upload</a></li>
-      </ul>
+        <ul class="nav">
+          <li><a href="{% url 'upload' %}">Upload</a></li>
+
+          {% if request.user.is_authenticated %}
+            <li class="muted small">Hi, {{ request.user.username }}</li>
+            <li><a href="{% url 'password_change' %}">Change password</a></li>
+            <li>
+              <form method="post" action="{% url 'logout' %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn-link">Logout</button>
+              </form>
+            </li>
+          {% else %}
+            <li><a href="{% url 'login' %}">Login</a></li>
+          {% endif %}
+        </ul>
     </nav>
   </header>
 
