@@ -9,28 +9,31 @@
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
 </head>
 <body>
-  <header class="navbar">
-    <nav class="navwrap">
-      <!-- Project branding always links back to home -->
-      <a class="brand" href="/">my-python-buddy</a>
-        <ul class="nav">
-          <li><a href="{% url 'upload' %}">Upload</a></li>
+    <header class="navbar">
+      <nav class="navwrap">
+        <!-- Project branding always links back to the upload page -->
+        <a class="brand" href="/">my-python-buddy</a>
+          <ul class="nav">
+            <li><a href="{% url 'upload' %}">Upload</a></li>
+            {% if request.user.is_superuser %}
+              <li><a href="/admin/">Admin</a></li>
+            {% endif %}
 
-          {% if request.user.is_authenticated %}
-            <li class="muted small">Hi, {{ request.user.username }}</li>
-            <li><a href="{% url 'password_change' %}">Change password</a></li>
-            <li>
-              <form method="post" action="{% url 'logout' %}" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit" class="btn-link">Logout</button>
-              </form>
-            </li>
-          {% else %}
-            <li><a href="{% url 'login' %}">Login</a></li>
-          {% endif %}
-        </ul>
-    </nav>
-  </header>
+            {% if request.user.is_authenticated %}
+              <li class="muted small">Hi, {{ request.user.username }}</li>
+              <li><a href="{% url 'password_change' %}">Change password</a></li>
+              <li>
+                <form method="post" action="{% url 'logout' %}" style="display:inline;">
+                  {% csrf_token %}
+                  <button type="submit" class="btn-link">Logout</button>
+                </form>
+              </li>
+            {% else %}
+              <li><a href="{% url 'login' %}">Login</a></li>
+            {% endif %}
+          </ul>
+      </nav>
+    </header>
 
   <main class="container">
     <!-- Flash messaging from Django (success, error, info) -->

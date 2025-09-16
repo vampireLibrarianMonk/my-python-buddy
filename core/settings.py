@@ -74,14 +74,31 @@ INSTALLED_APPS = [
     'base_application',
 ]
 
+# Order matters greatly here (AttributeError at / will result)
 MIDDLEWARE = [
+    # Security first
     'django.middleware.security.SecurityMiddleware',
+
+    # WhiteNoise should be early (after Security) to serve static files efficiently
     "whitenoise.middleware.WhiteNoiseMiddleware",
+
+    # Sessions must load before AuthenticationMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
+
+    # Common + CSRF before auth-protected views
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+
+    # Populates request.user (must run !BEFORE! base_application/middleware.py)
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+
+    # Messages used by redirect notices
     'django.contrib.messages.middleware.MessageMiddleware',
+
+    # The custom middleware depends on request.user being present
+    "base_application.middleware.ForcePasswordChangeMiddleware",
+
+    # Clickjacking last
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 

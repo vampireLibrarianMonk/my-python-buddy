@@ -92,6 +92,28 @@ Password (again):
 Superuser created successfully.
 ```
 
+### Regular User Creation (modify the three environment variables)
+```bash
+export DJANGO_SUPERUSER_USERNAME="regularUser"
+export DJANGO_SUPERUSER_EMAIL="UserReg@anemail.com"
+export DJANGO_SUPERUSER_PASSWORD="SuperSecureP@\$\$W0RD"
+
+python manage.py shell -c "
+from django.contrib.auth import get_user_model;
+from base_application.models import AccountProfile;
+import os;
+U = get_user_model();
+u = U.objects.create_user(
+    os.environ['DJANGO_SUPERUSER_USERNAME'],
+    os.environ['DJANGO_SUPERUSER_EMAIL'],
+    os.environ['DJANGO_SUPERUSER_PASSWORD']
+);
+p = AccountProfile.objects.get(user=u);
+p.must_change_password = True;
+p.save()
+"
+```
+
 ## Make Certificates to Enable HTTPS
 
 ### Install mkcert for Ubuntu
