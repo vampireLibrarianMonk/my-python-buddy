@@ -15,3 +15,6 @@ media/
 
 # Compiled Python Files
 *.pyc
+
+# Certificates for HTTPS
+*.pem
