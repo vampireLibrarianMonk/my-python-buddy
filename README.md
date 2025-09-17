@@ -66,11 +66,6 @@ python manage.py runserver
 python manage.py createsuperuser
 ````
 
-### Start the development server (default: http://localhost:8000)
-```bash
-python manage.py runserver
-```
-
 ### Choose a username for the superuser, default is your username.
 ```bash
 Username (leave blank to use '$USER'): 
