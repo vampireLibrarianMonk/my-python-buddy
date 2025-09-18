@@ -1,34 +1,57 @@
-import io
-import os
-import shutil
-import tempfile
+import os, shutil, tempfile
+from urllib.parse import urlparse, parse_qs
+
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.contrib.auth import get_user_model
+from django.conf import settings as dj_settings
+from base_application.models import AccountProfile, SubmittedFile
+
+
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Environment settings load and adjustment per needs of test environment
+BASE_DIR = dj_settings.BASE_DIR if hasattr(dj_settings, "BASE_DIR") else Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
+
+# Comma-separated list in environment file, falls back to "*"
+ALLOWED_HOSTS = [h for h in os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",") if h]
+ALLOWED_HOSTS.append("testserver")
+
+MEDIA_URL_ENV = os.getenv("DJANGO_MEDIA_URL", "/media/")
 
 # Temporary media root for these tests
 TEMP_MEDIA = tempfile.mkdtemp()
 
-"""
-Test file upload
-
-Serves as the mechanism to verify file upload behavior is as advertised. 
-- Will use temporary media root separate from one utilized for end use.
-- Temporary media folder is removed when testing is completed.
-
-Covered behavior:
-- GET /  renders the upload page (200) with the "Submit a Python file" prompt.
-- POST valid .py    returns 302 redirect to /success/?f=...
-- POST invalid .py  displays "Only .py files are allowed."
-- POST >1 MB .py    displays with "File too large."
-- When a successful upload occurs, the saved filename appears on the success page and within the uploads directory.
-"""
-@override_settings(MEDIA_ROOT=TEMP_MEDIA, MEDIA_URL="/media/")
+@override_settings(
+    MEDIA_ROOT=TEMP_MEDIA,
+    MEDIA_URL=MEDIA_URL_ENV,
+    ALLOWED_HOSTS=list(ALLOWED_HOSTS),
+    SECURE_SSL_REDIRECT=False,
+)
 class UploadViewTests(TestCase):
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
         shutil.rmtree(TEMP_MEDIA, ignore_errors=True)
+
+    def setUp(self):
+        # Create a logged-in user so views that require auth return 200
+        user = get_user_model()
+        username = os.getenv("TEST_USERNAME", "tester")
+        email = os.getenv("TEST_EMAIL", "tester@example.com")
+        password = os.getenv("TEST_PASSWORD", "pass1234!")
+        self.user = user.objects.create_user(username, email, password)
+
+        # Ensure a profile exists and DISABLE forced password change
+        prof, _ = AccountProfile.objects.get_or_create(user=self.user)
+        if prof.must_change_password:
+            prof.must_change_password = False
+            prof.save(update_fields=["must_change_password"])
+
+        self.client.login(username=username, password=password)
 
     def test_get_upload_page(self):
         resp = self.client.get(reverse("upload"))
@@ -36,8 +59,7 @@ class UploadViewTests(TestCase):
         self.assertContains(resp, "Submit a Python file")
 
     def test_accepts_valid_py(self):
-        content = b"print('hello')\n"
-        f = SimpleUploadedFile("script.py", content, content_type="text/x-python")
+        f = SimpleUploadedFile("script.py", b"print('hello')\n", content_type="text/x-python")
         resp = self.client.post(reverse("upload"), {"file": f}, follow=False)
         self.assertEqual(resp.status_code, 302)
         self.assertIn("/success/?f=", resp["Location"])
@@ -48,26 +70,135 @@ class UploadViewTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "Only .py files are allowed.")
 
-    def test_rejects_large_file(self):
-        big = io.BytesIO(b"x" * (1_000_000 + 1))  # > 1 MB
-        f = SimpleUploadedFile("big.py", big.getvalue(), content_type="text/x-python")
-        resp = self.client.post(reverse("upload"), {"file": f}, follow=True)
-        self.assertEqual(resp.status_code, 200)
-        self.assertContains(resp, "File too large")
+    def test_boundary_sizes(self):
+        # 1 MB test file ok
+        file_ok = SimpleUploadedFile("ok.py", b"x" * 1_000_000, content_type="text/x-python")
+        response_ok = self.client.post(reverse("upload"), {"file": file_ok}, follow=False)
+        self.assertEqual(response_ok.status_code, 302)
+
+        # Just over 1 MB file too big
+        file_too_big = SimpleUploadedFile("too_big.py", b"x" * 1_000_001, content_type="text/x-python")
+        response_too_big = self.client.post(reverse("upload"), {"file": file_too_big}, follow=True)
+        self.assertEqual(response_too_big.status_code, 200)
+        self.assertContains(response_too_big, "File too large")
+
+    def test_extension_rules_advanced(self):
+        # Accept .PY (case-insensitive)
+        file_one = SimpleUploadedFile("upper.PY", b"print(1)\n", content_type="text/x-python")
+        response_one = self.client.post(reverse("upload"), {"file": file_one}, follow=False)
+        self.assertEqual(response_one.status_code, 302)
+
+        # Reject double extension
+        file_two = SimpleUploadedFile("tricky.py.txt", b"print(1)\n", content_type="text/plain")
+        response_two = self.client.post(reverse("upload"), {"file": file_two}, follow=True)
+        self.assertEqual(response_two.status_code, 200)
+        self.assertContains(response_two, "Only .py files are allowed.")
 
     def test_file_is_saved_under_uploads(self):
-        f = SimpleUploadedFile("script.py", b"print(1)\n", content_type="text/x-python")
-        resp = self.client.post(reverse("upload"), {"file": f}, follow=False)
-        self.assertEqual(resp.status_code, 302)
+        file_object = SimpleUploadedFile("script.py", b"print(1)\n", content_type="text/x-python")
+        response_one = self.client.post(reverse("upload"), {"file": file_object}, follow=False)
+        self.assertEqual(response_one.status_code, 302)
 
-        # Follow redirect to success page
-        resp2 = self.client.get(resp["Location"])
-        self.assertEqual(resp2.status_code, 200)
+        # Extract filename from redirect (?f=...)
+        location = response_one["Location"]
+        file_name = parse_qs(urlparse(location).query).get("f", [None])[0]
+        self.assertIsNotNone(file_name, "Redirect missing ?f=<filename>")
 
-        fname = resp2.context["file_name"]
-        self.assertContains(resp2, f"/media/uploads/{fname}")
-        self.assertContains(resp2, fname)
+        # Follow redirect and assert content/link
+        response_two = self.client.get(location)
+        self.assertEqual(response_two.status_code, 200)
+        self.assertContains(response_two, f"/media/uploads/{file_name}")
+        self.assertContains(response_two, file_name)
 
         # Confirm file present on disk
-        path = os.path.join(TEMP_MEDIA, "uploads", fname)
+        path = os.path.join(TEMP_MEDIA, "uploads", file_name)
+        self.assertTrue(os.path.exists(path))
+
+    def test_delete_uploaded_file_removes_file_and_db(self):
+        # Upload a valid .py
+        f = SimpleUploadedFile("script.py", b"print(1)\n", content_type="text/x-python")
+        response = self.client.post(reverse("upload"), {"file": f}, follow=False)
+        self.assertEqual(response.status_code, 302)
+
+        # Extract saved filename from redirect (?f=<saved_name>)
+        location = response["Location"]
+        file_name = parse_qs(urlparse(location).query).get("f", [None])[0]
+        self.assertIsNotNone(file_name)
+
+        # Success page should show an "uploaded successfully" message
+        resp_success = self.client.get(location)
+        self.assertEqual(resp_success.status_code, 200)
+        self.assertRegex(resp_success.content.decode(), r"(?i)uploaded successfully")
+
+        # Confirm file exists on disk under TEMP_MEDIA/uploads/
+        path = os.path.join(TEMP_MEDIA, "uploads", file_name)
+        self.assertTrue(os.path.exists(path))
+
+        # Lookup database row to get the primary key (SHA256)
+        file_object = SubmittedFile.objects.get(saved_name=file_name)
+
+        # Delete must be POST: GET should return 405 (method not allowed)
+        get_response = self.client.get(reverse("delete_file", args=[file_object.sha256]))
+        self.assertEqual(get_response.status_code, 405)
+
+        # Call delete endpoint via POST, follow redirect back to list
+        response_two = self.client.post(reverse("delete_file", args=[file_object.sha256]), follow=True)
+        self.assertEqual(response_two.status_code, 200)  # after follow, page renders
+
+        # Assert delete success message is shown
+        self.assertRegex(response_two.content.decode(), r"(?i)deleted")
+
+        # Assert file is removed and database row deleted
+        self.assertFalse(os.path.exists(path))
+        self.assertFalse(SubmittedFile.objects.filter(pk=file_object.sha256).exists())
+
+        # Deleting a non-existent SHA now should 404
+        resp_missing = self.client.post(reverse("delete_file", args=[file_object.sha256]), follow=False)
+        self.assertEqual(resp_missing.status_code, 404)
+
+    def _fname_from_redirect(self, resp):
+        from urllib.parse import urlparse, parse_qs
+        return parse_qs(urlparse(resp["Location"]).query).get("f", [None])[0]
+
+    def test_duplicate_content_creates_single_row(self):
+        content = b"print('same')\n"
+        upload_one = SimpleUploadedFile("a.py", content, content_type="text/x-python")
+        response_one = self.client.post(reverse("upload"), {"file": upload_one}, follow=False)
+        self.assertEqual(response_one.status_code, 302)
+        file_name_one = self._fname_from_redirect(response_one)
+
+        upload_two = SimpleUploadedFile("b.py", content, content_type="text/x-python")
+        response_two = self.client.post(reverse("upload"), {"file": upload_two}, follow=False)
+        self.assertEqual(response_two.status_code, 302)
+        file_name_two = self._fname_from_redirect(response_two)
+
+        # Expect same saved file and exactly one database row (since primary is SHA256)
+        self.assertEqual(file_name_one, file_name_two)
+        self.assertEqual(SubmittedFile.objects.count(), 1)
+
+    def test_unicode_filename_saved_and_linked(self):
+        # Create a unsophisticated test file upload
+        name = "naïve_测试.py"
+        funky_file_upload = SimpleUploadedFile(name, b"print(42)\n", content_type="text/x-python")
+
+        # Upload the file
+        resp = self.client.post(reverse("upload"), {"file": funky_file_upload}, follow=False)
+        self.assertEqual(resp.status_code, 302)
+
+        # Extract saved filename from redirect (?f=<saved_name>)
+        location = resp["Location"]
+        saved = parse_qs(urlparse(location).query).get("f", [None])[0]
+        self.assertIsNotNone(saved, "Redirect missing ?f=<filename>")
+
+        # Success page shows link with saved name
+        response_two = self.client.get(location)
+        self.assertEqual(response_two.status_code, 200)
+        self.assertContains(response_two, f"/media/uploads/{saved}")
+
+        # Database stores the original Unicode filename
+        file_object = SubmittedFile.objects.get(saved_name=saved)
+        self.assertEqual(file_object.original_name, name)
+
+        # File exists on disk
+        path = os.path.join(TEMP_MEDIA, "uploads", saved)
         self.assertTrue(os.path.exists(path))
