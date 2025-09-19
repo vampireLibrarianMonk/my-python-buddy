@@ -7,21 +7,92 @@ This project for the current branch `base-scaffolding` is a minimal example temp
 Primary project developer who has put together a base template serving as a starter for code upload and analysis workflows in Django.
 
 ## User Guide
-1. Start the development server.
+
+### Install mkcert for Ubuntu
 ```bash
-python manage.py runserver
+sudo apt install mkcert -y
 ```
-2. Go to the following page on the browser http://127.0.0.1:8000
-3. Upload a `.py` file on the **Upload** page.
-4. The file appears in **Previous uploads** with a **View/Download** link and an **Analysis** action.
-5. Click **Analyze** to pick analyzers and view results (split view: source with line numbers + findings).
-6. Use the trash icon to delete an entry. 
-7. Visit the following page (http://127.0.0.1:8000/healthz/) what will become the primary interface API for checking the health of the server.
-or
-8. Use the following curl + jquery command for a "pretty" command line alternative to the browser:
+
+### Trust mkcert’s local certificate authority:
 ```bash
-curl -s http://127.0.0.1:8000/healthz/ | jq
+mkcert -install
+````
+
+### Generate a cert for localhost:
+```bash
+mkcert localhost 127.0.0.1 ::1
 ```
+
+### The following two files are created:
+```bash
+localhost+2.pem         # certificate
+localhost+2-key.pem     # private key
+```
+
+### Use the two certificates with your HTTPS server:
+```bash
+uvicorn core.asgi:application --host 127.0.0.1 --port 8443 \
+  --ssl-certfile localhost+2.pem --ssl-keyfile localhost+2-key.pem
+```
+
+### User Option 1: Super User Setup
+
+### Create an admin account for Django's built-in authentication, administration and login system.
+```bash
+python manage.py createsuperuser
+````
+
+### Choose a username for the superuser, default is your username.
+```bash
+Username (leave blank to use '$USER'): 
+```
+
+### Optional Email (only for when site has email server capability)
+```bash
+Email address: pmf141@psu.edu
+```
+
+### Set the superuser's password and then confirm it.
+```bash
+Password: 
+Password (again): 
+```
+
+### Confirmation of successfully created account
+```bash
+Superuser created successfully.
+```
+
+### User Option 2: Regular User Creation (modify the three environment variables)
+```bash
+export DJANGO_SUPERUSER_USERNAME="regularUser"
+export DJANGO_SUPERUSER_EMAIL="UserReg@anemail.com"
+export DJANGO_SUPERUSER_PASSWORD="SuperSecureP@\$\$W0RD"
+
+python manage.py shell -c "
+from django.contrib.auth import get_user_model;
+from base_application.models import AccountProfile;
+import os;
+U = get_user_model();
+u = U.objects.create_user(
+    os.environ['DJANGO_SUPERUSER_USERNAME'],
+    os.environ['DJANGO_SUPERUSER_EMAIL'],
+    os.environ['DJANGO_SUPERUSER_PASSWORD']
+);
+p = AccountProfile.objects.get(user=u);
+p.must_change_password = True;
+p.save()
+"
+```
+
+## Site Usage
+0. Go to https://127.0.0.1:8443/accounts/login/
+1. Login with either the `SuperUser` or `RegularUser` steps above, you are then forced to change your password to continue site use.
+2. Upload a `.py` file on the **Upload** page.
+3. The file appears in **Previous uploads** with a **View/Download** link and an **Analysis** action.
+4. Click **Analyze** to pick analyzers and view results (split view: source with line numbers + findings).
+5. Use the trash icon to delete an entry. 
+6. Visit the following page (https://127.0.0.1:8443/healthz/) what will become the primary interface API for checking the health of the server.
 
 # Developers Guide Notes
 - Configure settings via an `.env` that the developer will derive from `.env.example`.
@@ -54,92 +125,11 @@ python manage.py migrate
 python manage.py collectstatic --noinput
 ```
 
-### Development Server Launch
-```bash
-python manage.py runserver
-```
-
-## User Setup
-
-### Create an admin account for Django's built-in authentication, administration and login system.
-```bash
-python manage.py createsuperuser
-````
-
-### Choose a username for the superuser, default is your username.
-```bash
-Username (leave blank to use '$USER'): 
-```
-
-### Optional Email (only for when site has email server capability)
-```bash
-Email address: pmf141@psu.edu
-```
-
-### Set the superuser's password and then confirm it.
-```bash
-Password: 
-Password (again): 
-```
-
-### Confirmation of successfully created account
-```bash
-Superuser created successfully.
-```
-
-### Regular User Creation (modify the three environment variables)
-```bash
-export DJANGO_SUPERUSER_USERNAME="regularUser"
-export DJANGO_SUPERUSER_EMAIL="UserReg@anemail.com"
-export DJANGO_SUPERUSER_PASSWORD="SuperSecureP@\$\$W0RD"
-
-python manage.py shell -c "
-from django.contrib.auth import get_user_model;
-from base_application.models import AccountProfile;
-import os;
-U = get_user_model();
-u = U.objects.create_user(
-    os.environ['DJANGO_SUPERUSER_USERNAME'],
-    os.environ['DJANGO_SUPERUSER_EMAIL'],
-    os.environ['DJANGO_SUPERUSER_PASSWORD']
-);
-p = AccountProfile.objects.get(user=u);
-p.must_change_password = True;
-p.save()
-"
-```
-
-## Make Certificates to Enable HTTPS
-
-### Install mkcert for Ubuntu
-```bash
-sudo apt install mkcert -y
-```
-
-### Trust mkcert’s local certificate authority:
-```bash
-mkcert -install
-````
-
-### Generate a cert for localhost:
-```bash
-mkcert localhost 127.0.0.1 ::1
-```
-
-### The following two files are created:
-```bash
-localhost+2.pem         # certificate
-localhost+2-key.pem     # private key
-```
-
-### Use them with your HTTPS server (example with Uvicorn):
-```bash
-uvicorn core.asgi:application --host 127.0.0.1 --port 8443 \
-  --ssl-certfile localhost+2.pem --ssl-keyfile localhost+2-key.pem
-```
-
 ## Testing
 This project will accumulate software tests in the form of acceptance, integration and unit tests as it progresses. Before using read teh command line usage below and the pydoc with each test file, class and method under the `base_application/tests` directory. 
+
+**Test Files Location:** `base_application/tests`
+**Test Files Documentation:** `documentation/test`
 
 ### Command-line Usage
 
