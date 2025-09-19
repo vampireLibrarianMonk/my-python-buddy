@@ -53,23 +53,27 @@ class UploadViewTests(TestCase):
 
         self.client.login(username=username, password=password)
 
+    # Test Specification Location: documentation/test/unit/UT-11-01.md
     def test_get_upload_page(self):
         resp = self.client.get(reverse("upload"))
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "Submit a Python file")
 
+    # Test Specification Location: documentation/test/unit/UT-11-02.md
     def test_accepts_valid_py(self):
         f = SimpleUploadedFile("script.py", b"print('hello')\n", content_type="text/x-python")
         resp = self.client.post(reverse("upload"), {"file": f}, follow=False)
         self.assertEqual(resp.status_code, 302)
         self.assertIn("/success/?f=", resp["Location"])
 
+    # Test Specification Location: documentation/test/unit/UT-11-03.md
     def test_rejects_non_py(self):
         f = SimpleUploadedFile("notes.txt", b"not python", content_type="text/plain")
         resp = self.client.post(reverse("upload"), {"file": f}, follow=True)
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "Only .py files are allowed.")
 
+    # Test Specification Location: documentation/test/unit/UT-11-04.md
     def test_boundary_sizes(self):
         # 1 MB test file ok
         file_ok = SimpleUploadedFile("ok.py", b"x" * 1_000_000, content_type="text/x-python")
@@ -82,6 +86,7 @@ class UploadViewTests(TestCase):
         self.assertEqual(response_too_big.status_code, 200)
         self.assertContains(response_too_big, "File too large")
 
+    # Test Specification Location: documentation/test/unit/UT-11-05.md
     def test_extension_rules_advanced(self):
         # Accept .PY (case-insensitive)
         file_one = SimpleUploadedFile("upper.PY", b"print(1)\n", content_type="text/x-python")
@@ -94,6 +99,7 @@ class UploadViewTests(TestCase):
         self.assertEqual(response_two.status_code, 200)
         self.assertContains(response_two, "Only .py files are allowed.")
 
+    # Test Specification Location: documentation/test/unit/UT-11-06.md
     def test_file_is_saved_under_uploads(self):
         file_object = SimpleUploadedFile("script.py", b"print(1)\n", content_type="text/x-python")
         response_one = self.client.post(reverse("upload"), {"file": file_object}, follow=False)
@@ -114,6 +120,7 @@ class UploadViewTests(TestCase):
         path = os.path.join(TEMP_MEDIA, "uploads", file_name)
         self.assertTrue(os.path.exists(path))
 
+    # Test Specification Location: documentation/test/unit/UT-11-07.md
     def test_delete_uploaded_file_removes_file_and_db(self):
         # Upload a valid .py
         f = SimpleUploadedFile("script.py", b"print(1)\n", content_type="text/x-python")
@@ -156,10 +163,12 @@ class UploadViewTests(TestCase):
         resp_missing = self.client.post(reverse("delete_file", args=[file_object.sha256]), follow=False)
         self.assertEqual(resp_missing.status_code, 404)
 
+    # Test Specification Location: documentation/test/unit/UT-11-08.md
     def _fname_from_redirect(self, resp):
         from urllib.parse import urlparse, parse_qs
         return parse_qs(urlparse(resp["Location"]).query).get("f", [None])[0]
 
+    # Test Specification Location: documentation/test/unit/UT-11-08.md
     def test_duplicate_content_creates_single_row(self):
         content = b"print('same')\n"
         upload_one = SimpleUploadedFile("a.py", content, content_type="text/x-python")
@@ -176,6 +185,7 @@ class UploadViewTests(TestCase):
         self.assertEqual(file_name_one, file_name_two)
         self.assertEqual(SubmittedFile.objects.count(), 1)
 
+    # Test Specification Location: documentation/test/unit/UT-11-09.md
     def test_unicode_filename_saved_and_linked(self):
         # Create a unsophisticated test file upload
         name = "naïve_测试.py"
