@@ -23,7 +23,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='submittedfile',
             name='analysis_status',
-            field=models.CharField(choices=[('NOT_REQUESTED', 'Not requested'), ('COMPLETE', 'Complete'), ('FAILED', 'Failed')], default='NOT_REQUESTED', max_length=20),
+            field=models.CharField(
+                choices=[('NOT_REQUESTED', 'Not requested'), ('COMPLETE', 'Complete'), ('FAILED', 'Failed')],
+                default='NOT_REQUESTED',
+                max_length=20,
+            ),
         ),
         migrations.AddField(
             model_name='submittedfile',

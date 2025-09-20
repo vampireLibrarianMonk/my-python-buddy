@@ -3,6 +3,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+
 class AccountProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     must_change_password = models.BooleanField(default=True)
@@ -10,10 +11,12 @@ class AccountProfile(models.Model):
     def __str__(self):
         return f"Profile({self.user.username})"
 
+
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_profile(sender, instance, created, **kwargs):
     if created:
         AccountProfile.objects.create(user=instance)
+
 
 class SubmittedFile(models.Model):
     class AnalysisStatus(models.TextChoices):
@@ -39,7 +42,9 @@ class SubmittedFile(models.Model):
         default=AnalysisStatus.NOT_REQUESTED,
     )
     analysis_analyzers = models.CharField(  # comma-separated keys reserved for analyzers, e.g. "bandit"
-        max_length=255, blank=True, default=""
+        max_length=255,
+        blank=True,
+        default="",
     )
     analysis_findings = models.PositiveIntegerField(default=0)
     analyzed_at = models.DateTimeField(null=True, blank=True)

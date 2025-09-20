@@ -7,6 +7,7 @@ ALLOWED_CTYPES = {
     "text/plain",  # for now allow that some browsers view python as text
 }
 
+
 class UploadPyForm(forms.Form):
     file = forms.FileField(label="Python file")
 
@@ -25,21 +26,18 @@ class UploadPyForm(forms.Form):
             raise forms.ValidationError("File too large (max 1 MB).")
         return f
 
+
 class AnalyzerSelectForm(forms.Form):
     ANALYZER_CHOICES = [
         # Common security issue finder
         ("bandit", "Bandit (security) – https://bandit.readthedocs.io/"),
-
         # Broad-based analysis tools to cover down on what Bandit might miss and has a broad range of community rules
         # to pull from
         ("semgrep", "Semgrep (pattern matcher (community rules) – https://semgrep.dev/"),
-
         # Early type checker
         ("mypy", "MyPy (type checker) – https://mypy.readthedocs.io/"),
-
         # Dead code finder
         ("vulture", "Vulture (dead code) – https://github.com/jendrikseipp/vulture"),
-
         # For credentials
         ("dodgy", "Dodgy (secrets/bad patterns) – https://github.com/landscapeio/dodgy"),
     ]

@@ -6,24 +6,23 @@ import time
 from pathlib import Path
 from urllib.parse import quote as urlquote
 
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import PasswordChangeView
+
 # Django
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.shortcuts import get_object_or_404
-from django.urls import reverse
-from django.utils.text import slugify
 from django.http import JsonResponse
-from django.contrib import messages
-from django.shortcuts import render, redirect
-from django.conf import settings
-from django.views.decorators.http import require_http_methods
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import PasswordChangeView
-from django.urls import reverse_lazy
+from django.utils.text import slugify
+from django.views.decorators.http import require_http_methods
 
 # Local
-from .forms import UploadPyForm, AnalyzerSelectForm
+from .forms import AnalyzerSelectForm, UploadPyForm
 from .models import SubmittedFile
 
 # First phase templating until analyzers are implemented
@@ -85,6 +84,7 @@ SAMPLE_FINDINGS_MAP_TEMPLATE = {
     ],
 }
 
+
 def _safe_unique_py_name(original_filename: str) -> str:
     """
     Sanitize the incoming filename to a safe slug and append a short random suffix.
@@ -94,11 +94,13 @@ def _safe_unique_py_name(original_filename: str) -> str:
     safe_stem = slugify(stem) or "file"
     return f"{safe_stem}-{secrets.token_hex(6)}.py"
 
+
 def _sha256_of_upload(uploaded_file) -> str:
     hasher = hashlib.sha256()
     for chunk in uploaded_file.chunks():
         hasher.update(chunk)
     return hasher.hexdigest()
+
 
 @login_required
 @require_http_methods(["GET", "POST"])
@@ -163,6 +165,7 @@ def upload_view(request):
         },
     )
 
+
 @login_required
 @require_http_methods(["POST"])
 def delete_file_view(request, sha256):
@@ -177,6 +180,7 @@ def delete_file_view(request, sha256):
     ps = request.GET.get("ps", "10")
     page = request.GET.get("page", "1")
     return redirect(f"{reverse('upload')}?ps={ps}&page={page}")
+
 
 @login_required
 @require_http_methods(["GET"])
@@ -202,21 +206,25 @@ def upload_success_view(request):
         {"file_name": saved_name, "file_url": file_url, "sha256": sha256},
     )
 
+
 @login_required
 @require_http_methods(["GET"])
 def healthcheck_view(request):
     """
     Healthcheck driven by .env-backed Django settings.
     """
-    return JsonResponse({
-        "status": "ok",
-        "app": settings.APP_NAME,
-        "env": settings.APP_ENV,
-        "version": settings.APP_VERSION,
-        "build": settings.APP_BUILD,
-        "debug": bool(settings.DEBUG),
-        "time": time.time(),
-    })
+    return JsonResponse(
+        {
+            "status": "ok",
+            "app": settings.APP_NAME,
+            "env": settings.APP_ENV,
+            "version": settings.APP_VERSION,
+            "build": settings.APP_BUILD,
+            "debug": bool(settings.DEBUG),
+            "time": time.time(),
+        },
+    )
+
 
 @login_required
 @require_http_methods(["GET", "POST"])
@@ -289,8 +297,8 @@ def analyze_file_view(request, sha256: str):
             "and render it here."
         ),
         "llm_placemarker": {
-            "text": llm_text
-        }
+            "text": llm_text,
+        },
     }
 
     return render(
@@ -304,6 +312,7 @@ def analyze_file_view(request, sha256: str):
             "file_url": settings.MEDIA_URL + "uploads/" + obj.saved_name,
         },
     )
+
 
 class MustChangePasswordView(PasswordChangeView):
     template_name = "registration/password_change_form.html"

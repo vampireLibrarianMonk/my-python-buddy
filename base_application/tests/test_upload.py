@@ -1,16 +1,17 @@
-import os, shutil, tempfile
-from urllib.parse import urlparse, parse_qs
+import os
+import shutil
+import tempfile
+from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
+from django.conf import settings as dj_settings
+from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.contrib.auth import get_user_model
-from django.conf import settings as dj_settings
-from base_application.models import AccountProfile, SubmittedFile
-
-
-from pathlib import Path
 from dotenv import load_dotenv
+
+from base_application.models import AccountProfile, SubmittedFile
 
 # Environment settings load and adjustment per needs of test environment
 BASE_DIR = dj_settings.BASE_DIR if hasattr(dj_settings, "BASE_DIR") else Path(__file__).resolve().parent.parent
@@ -24,6 +25,7 @@ MEDIA_URL_ENV = os.getenv("DJANGO_MEDIA_URL", "/media/")
 
 # Temporary media root for these tests
 TEMP_MEDIA = tempfile.mkdtemp()
+
 
 @override_settings(
     MEDIA_ROOT=TEMP_MEDIA,
@@ -165,7 +167,8 @@ class UploadViewTests(TestCase):
 
     # Test Specification Location: documentation/test/unit/UT-11-08.md
     def _fname_from_redirect(self, resp):
-        from urllib.parse import urlparse, parse_qs
+        from urllib.parse import parse_qs, urlparse
+
         return parse_qs(urlparse(resp["Location"]).query).get("f", [None])[0]
 
     # Test Specification Location: documentation/test/unit/UT-11-08.md

@@ -1,3 +1,1 @@
-from django.contrib import admin
-
-# Model registration to occur here.
+# Model registration to occur here (from django.contrib import admin)

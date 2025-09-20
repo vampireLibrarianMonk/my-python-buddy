@@ -1,12 +1,14 @@
-from django.shortcuts import redirect
-from django.urls import resolve, reverse
 from django.contrib import messages
+from django.shortcuts import redirect
+from django.urls import resolve
+
 
 class ForcePasswordChangeMiddleware:
     """
     If a logged-in user is flagged (profile.must_change_password=True),
     force them to the password-change page until updated.
     """
+
     def __init__(self, get_response):
         self.get_response = get_response
 

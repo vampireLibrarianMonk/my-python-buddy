@@ -10,9 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from dotenv import load_dotenv
 import os
 from pathlib import Path
+
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,8 +26,19 @@ load_dotenv(BASE_DIR / ".env")
 
 APP_NAME = os.getenv("APP_NAME", "my-python-buddy")
 APP_ENV = os.getenv("APP_ENV", "dev")
-APP_VERSION = os.getenv("APP_VERSION", "dev")
 APP_BUILD = os.getenv("APP_BUILD", "")
+
+# Versioning is now from the VERSION file at the base of the repository
+version_path = BASE_DIR / "VERSION"
+try:
+    with version_path.open("r", encoding="utf-8") as f:
+        first_line = f.readline().strip()
+    if first_line:
+        APP_VERSION = first_line
+    else:
+        raise ValueError("VERSION file is empty or whitespace-only")
+except (FileNotFoundError, PermissionError, IsADirectoryError, UnicodeDecodeError, ValueError):
+    APP_VERSION = os.getenv("APP_VERSION", "no-version-detected")
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "INSECURE-DUDE-DEV-ONLY")
@@ -38,9 +50,7 @@ DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() in ("1", "true", "yes")
 ALLOWED_HOSTS = [h for h in os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",") if h]
 
 # Revisit Later: trust origins for CSRF (useful if we’ll access via http://localhost:8000, etc.)
-CSRF_TRUSTED_ORIGINS = [
-    o for o in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o
-]
+CSRF_TRUSTED_ORIGINS = [o for o in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o]
 
 # Redirects
 LOGIN_URL = "login"
@@ -48,8 +58,8 @@ LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 
 # Logout users after 30 minutes of being inactive
-SESSION_COOKIE_AGE = 30 * 60          # 1800 seconds
-SESSION_SAVE_EVERY_REQUEST = True     # refresh expiry on each request
+SESSION_COOKIE_AGE = 30 * 60  # 1800 seconds
+SESSION_SAVE_EVERY_REQUEST = True  # refresh expiry on each request
 
 # Session will expire when the browser closes
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
@@ -60,8 +70,8 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
 # Cap request sizes (subject to adjustment as project progresses)
-DATA_UPLOAD_MAX_MEMORY_SIZE = 2_000_000     # POST body cap (~2 MB)
-FILE_UPLOAD_MAX_MEMORY_SIZE = 1_000_000     # In-memory file cap (~1 MB)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 2_000_000  # POST body cap (~2 MB)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 1_000_000  # In-memory file cap (~1 MB)
 
 # Application definition
 INSTALLED_APPS = [
@@ -78,26 +88,19 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     # Security first
     'django.middleware.security.SecurityMiddleware',
-
     # WhiteNoise should be early (after Security) to serve static files efficiently
     "whitenoise.middleware.WhiteNoiseMiddleware",
-
     # Sessions must load before AuthenticationMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
-
     # Common + CSRF before auth-protected views
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-
     # Populates request.user (must run !BEFORE! base_application/middleware.py)
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-
     # Messages used by redirect notices
     'django.contrib.messages.middleware.MessageMiddleware',
-
     # The custom middleware depends on request.user being present
     "base_application.middleware.ForcePasswordChangeMiddleware",
-
     # Clickjacking last
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -128,7 +131,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    },
 }
 
 # Password validation
