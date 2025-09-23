@@ -190,7 +190,7 @@ class UploadViewTests(TestCase):
 
     # Test Specification Location: documentation/test/unit/UT-11-09.md
     def test_unicode_filename_saved_and_linked(self):
-        # Create a unsophisticated test file upload
+        # Create an unsophisticated test file upload
         name = "naïve_测试.py"
         funky_file_upload = SimpleUploadedFile(name, b"print(42)\n", content_type="text/x-python")
 
@@ -215,3 +215,23 @@ class UploadViewTests(TestCase):
         # File exists on disk
         path = os.path.join(TEMP_MEDIA, "uploads", saved)
         self.assertTrue(os.path.exists(path))
+
+    # Test Specification Location: documentation/test/unit/UT-11-11.md TODO
+    def test_success_page_handles_missing_db_record(self):
+        # Manually save a file without a SubmittedFile record
+        file_name = "manual.py"
+        saved_path = os.path.join(TEMP_MEDIA, "uploads", file_name)
+        with open(saved_path, "wb") as f:
+            f.write(b"print('no db record')")
+
+        # Access success page with this manually placed file
+        resp = self.client.get(reverse("upload_success") + f"?f={file_name}")
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, file_name)  # Still renders the filename
+        self.assertContains(resp, f"/media/uploads/{file_name}")
+
+    # Test Specification Location: documentation/test/unit/UT-11-12.md TODO
+    def test_success_redirects_if_filename_missing(self):
+        response = self.client.get(reverse("upload_success"))  # No ?f= in querystring
+        self.assertEqual(response.status_code, 302)  # Redirect
+        self.assertEqual(response.url, reverse("upload"))  # Redirects to upload page
