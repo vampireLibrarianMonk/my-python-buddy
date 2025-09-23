@@ -189,6 +189,6 @@ python manage.py test base_application.tests.test_upload.UploadViewTests.test_ac
 ### Useful flags
 
 ```bash
-python manage.py test --keepdb       # reuse DB for faster test cycles
+python manage.py test --keepdb       # reuse database for faster test cycles
 python manage.py test --parallel 4   # run tests in parallel
 ```

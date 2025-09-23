@@ -144,11 +144,8 @@ def upload_view(request):
 
     # --- List: paginated table of prior uploads ---
     ps = request.GET.get("ps", "10")
-    try:
-        page_size = max(1, min(100, int(ps)))  # clamp 1..100
-    except ValueError:
-        page_size = 10
-
+    page_size = int(ps) if ps.isdigit() else 10
+    page_size = max(1, min(100, page_size))  # Clamp to 1–100
     page_no = request.GET.get("page", "1")
 
     qs = SubmittedFile.objects.all()
@@ -169,7 +166,7 @@ def upload_view(request):
 @login_required
 @require_http_methods(["POST"])
 def delete_file_view(request, sha256):
-    """Delete DB record and the stored file. Requires POST + CSRF; confirms in UI."""
+    """Delete database record and the stored file. Requires POST + CSRF; confirms in UI."""
     obj = get_object_or_404(SubmittedFile, pk=sha256)
     # Delete file from storage first (don't save model after delete file)
     obj.file.delete(save=False)
@@ -192,13 +189,13 @@ def upload_success_view(request):
     saved_name = os.path.basename(saved_name)
     file_url = settings.MEDIA_URL + "uploads/" + saved_name
 
-    # Try to find the DB record so we can link to per-file analyze
+    # Try to find the database record so we can link to per-file analyze
     sha256 = ""
     try:
         obj = SubmittedFile.objects.get(saved_name=saved_name)
         sha256 = obj.sha256
     except SubmittedFile.DoesNotExist:
-        pass  # File may predate DB tracking; just show the download link
+        pass  # File may predate database tracking; just show the download link
 
     return render(
         request,
