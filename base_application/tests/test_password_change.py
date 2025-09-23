@@ -26,8 +26,8 @@ class MustChangePasswordHookTests(TestCase):
         User = get_user_model()
 
         # Use environment overrides when provided; otherwise generate deterministic-safe test values.
-        username = _env_or(lambda: f"tester_{get_random_string(8)}", "TEST_USERNAME")  # pragma: allowlist secret
-        email = _env_or(lambda: f"{get_random_string(6)}@example.invalid", "TEST_EMAIL")  # pragma: allowlist secret
+        username = _env_or(lambda: f"tester_{get_random_string(8)}", "TEST_USERNAME")
+        email = _env_or(lambda: f"{get_random_string(6)}@example.invalid", "TEST_EMAIL")
         old_password = _env_or(lambda: secrets.token_urlsafe(16), "TEST_PASSWORD")  # pragma: allowlist secret
 
         self.user = User.objects.create_user(
