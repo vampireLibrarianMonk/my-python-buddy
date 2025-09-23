@@ -12,7 +12,7 @@ from base_application.views import MustChangePasswordView
 
 
 def _env_or(default_factory, *env_keys):
-    """Return the first present env var among env_keys, else call default_factory()."""
+    """Return the first present environment var among environment_keys, else call default_factory()."""
     for k in env_keys:
         v = os.getenv(k)
         if v:
@@ -50,9 +50,10 @@ class MustChangePasswordHookTests(TestCase):
         middleware.process_request(request)
         request.session.save()
 
-        # New password: from env if provided, else securely generated; ensure not equal to old.
+        # New password: from environment if provided, else securely generated.
+        # Ensure the old and new password are not equal.
         new_password = _env_or(lambda: secrets.token_urlsafe(18), "TEST_NEW_PASSWORD")
-        if new_password == self.old_password:  # vanishingly rare, but make explicit
+        if new_password == self.old_password:
             new_password = secrets.token_urlsafe(20)
 
         form_data = {
