@@ -20,7 +20,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Conda (Miniforge + mamba)
+      # Set up conda from the environment.yml
+      - name: Setup Conda (Miniforge)
         uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
@@ -30,23 +31,18 @@ jobs:
           environment-file: environment.yml
           channel-priority: strict
 
-      - name: Verify env
+      # Run Django tests under coverage and build the HTML report
+      - name: Test with Django + build coverage HTML
         shell: bash -l {0}
         run: |
-          conda info
-          conda list python | sed -n '1,5p'
-
-      - name: Run tests with coverage & build HTML site
-        shell: bash -l {0}
-        run: |
-          coverage run -m pytest
+          coverage run manage.py test
           coverage html -d coverage_html
           touch coverage_html/.nojekyll
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload site artifact
+      - name: Upload coverage site
         uses: actions/upload-pages-artifact@v3
         with:
           path: coverage_html
