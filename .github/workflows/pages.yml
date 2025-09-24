@@ -1,4 +1,4 @@
-name: Coverage → GitHub Pages
+name: Code Coverage → GitHub Pages
 
 on:
   push:
@@ -20,20 +20,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # miniforge a lightweight alternative
-      - name: Setup Conda
+      - name: Setup Conda (Miniforge + mamba)
         uses: conda-incubator/setup-miniconda@v3
         with:
+          miniforge-version: latest
+          use-mamba: true
+          auto-activate-base: false
           activate-environment: my-python-buddy
           environment-file: environment.yml
-          python-version: 3.10
-          auto-activate-base: false
+          channel-priority: strict
 
-      - name: Verify conda env
+      - name: Verify env
         shell: bash -l {0}
         run: |
           conda info
-          conda list
+          conda list python | sed -n '1,5p'
 
       - name: Run tests with coverage & build HTML site
         shell: bash -l {0}
