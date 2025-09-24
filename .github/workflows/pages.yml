@@ -1,4 +1,4 @@
-name: Code Coverage → GitHub Pages
+name: Coverage → GitHub Pages
 
 on:
   push:
@@ -20,21 +20,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      # miniforge a lightweight alternative
+      - name: Setup Conda
+        uses: conda-incubator/setup-miniconda@v3
         with:
-          python-version: "3.10"
+          activate-environment: my-python-buddy
+          environment-file: environment.yml
+          python-version: 3.10
+          auto-activate-base: false
 
-      - name: Install deps
+      - name: Verify conda env
+        shell: bash -l {0}
         run: |
-          python -m pip install -U pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pip install coverage pytest
+          conda info
+          conda list
 
       - name: Run tests with coverage & build HTML site
+        shell: bash -l {0}
         run: |
           coverage run -m pytest
           coverage html -d coverage_html
-          # prevent Jekyll from altering underscore paths in coverage assets
           touch coverage_html/.nojekyll
 
       - name: Configure Pages
