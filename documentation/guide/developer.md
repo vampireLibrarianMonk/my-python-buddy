@@ -64,6 +64,48 @@ uvicorn core.asgi:application --host 127.0.0.1 --port 8443   --ssl-certfile loca
 
 ---
 
+## User Setup
+### Create an admin account for Django's built-in authentication, administration and login system.
+```bash
+python manage.py createsuperuser
+```
+
+### Choose a username for the superuser, default is your username.
+```bash
+Username (leave blank to use '$USER'): 
+Optional Email (only for when site has email server capability)
+Email address: pmf141@psu.edu
+Set the superuser's password and then confirm it.
+Password: 
+Password (again): 
+Confirmation of successfully created account
+Superuser created successfully.
+```
+
+### Regular User Creation (modify the three environment variables)
+```bash
+export DJANGO_SUPERUSER_USERNAME="regularUser"
+export DJANGO_SUPERUSER_EMAIL="UserReg@anemail.com"
+export DJANGO_SUPERUSER_PASSWORD="SuperSecureP@\$\$W0RD"
+
+python manage.py shell -c "
+from django.contrib.auth import get_user_model;
+from base_application.models import AccountProfile;
+import os;
+U = get_user_model();
+u = U.objects.create_user(
+    os.environ['DJANGO_SUPERUSER_USERNAME'],
+    os.environ['DJANGO_SUPERUSER_EMAIL'],
+    os.environ['DJANGO_SUPERUSER_PASSWORD']
+);
+p = AccountProfile.objects.get(user=u);
+p.must_change_password = True;
+p.save()
+"
+```
+
+---
+
 # Amazon EC2 Support Scripts.
 
 For brevity there exists two support scripts once your EC2 Instance is running in AWS. This project does not currently cover the setup of cloud infrastructure to support deployment. The scripts are meant to be run in `sudo`.
