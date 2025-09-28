@@ -42,6 +42,7 @@ class MustChangePasswordHookTests(TestCase):
         self.profile.must_change_password = True
         self.profile.save()
 
+    # Test Specification Location: documentation/test/unit/UT-11-13.md
     def test_form_valid_clears_must_change_flag(self):
         # Prepare POST request + session
         request = self.factory.post("/accounts/password_change/")
