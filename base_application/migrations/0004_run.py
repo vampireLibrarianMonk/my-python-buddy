@@ -15,8 +15,27 @@ class Migration(migrations.Migration):
             name='Run',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('analyzer', models.CharField(choices=[('bandit', 'Bandit'), ('semgrep', 'Semgrep'), ('mypy', 'MyPy'), ('vulture', 'Vulture'), ('dodgy', 'Dodgy')], max_length=32)),
-                ('status', models.CharField(choices=[('NOT_REQUESTED', 'Not Requested'), ('REQUESTED', 'Requested'), ('PENDING', 'Pending'), ('COMPLETED', 'Completed'), ('ERRORED', 'Errored')], default='NOT_REQUESTED', max_length=32)),
+                (
+                    'analyzer',
+                    models.CharField(
+                        choices=[('bandit', 'Bandit'), ('semgrep', 'Semgrep'), ('mypy', 'MyPy'), ('vulture', 'Vulture'), ('dodgy', 'Dodgy')],
+                        max_length=32,
+                    ),
+                ),
+                (
+                    'status',
+                    models.CharField(
+                        choices=[
+                            ('NOT_REQUESTED', 'Not Requested'),
+                            ('REQUESTED', 'Requested'),
+                            ('PENDING', 'Pending'),
+                            ('COMPLETED', 'Completed'),
+                            ('ERRORED', 'Errored'),
+                        ],
+                        default='NOT_REQUESTED',
+                        max_length=32,
+                    ),
+                ),
                 ('started_at', models.DateTimeField(auto_now_add=True)),
                 ('completed_at', models.DateTimeField(blank=True, null=True)),
                 ('findings_count', models.IntegerField(default=0)),

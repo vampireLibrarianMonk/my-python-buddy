@@ -32,7 +32,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='run',
             name='status',
-            field=models.CharField(choices=[('PENDING', 'Pending'), ('REQUESTED', 'Requested'), ('COMPLETED', 'Completed'), ('ERRORED', 'Errored')], default='PENDING', max_length=20),
+            field=models.CharField(
+                choices=[('PENDING', 'Pending'), ('REQUESTED', 'Requested'), ('COMPLETED', 'Completed'), ('ERRORED', 'Errored')],
+                default='PENDING',
+                max_length=20,
+            ),
         ),
         migrations.CreateModel(
             name='Finding',

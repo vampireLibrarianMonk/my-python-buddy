@@ -4,7 +4,7 @@ default_language_version:
 exclude: (?x)^(
   /
   (
-    scratch_pad|
+    sample-files|
     \.venv
   )/
   )
