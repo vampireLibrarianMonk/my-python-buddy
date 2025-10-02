@@ -3,7 +3,6 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-
 class AccountProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     must_change_password = models.BooleanField(default=True)
@@ -54,3 +53,48 @@ class SubmittedFile(models.Model):
 
     def __str__(self):
         return f"{self.saved_name} ({self.sha256[:12]}…)"
+
+
+class Run(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        REQUESTED = "REQUESTED", "Requested"
+        COMPLETED = "COMPLETED", "Completed"
+        ERRORED = "ERRORED", "Errored"
+
+    submitted_file = models.ForeignKey("SubmittedFile", on_delete=models.CASCADE, related_name="runs")
+    analyzer = models.CharField(max_length=15)
+    analyzer_version = models.CharField(max_length=15, null=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    findings_count = models.IntegerField(default=0)
+    severity_counts = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["-started_at"]
+
+    def __str__(self):
+        return f"{self.analyzer} run on {self.submitted_file.saved_name}"
+
+
+class Finding(models.Model):
+    run = models.ForeignKey("Run", on_delete=models.CASCADE, related_name="findings")
+    severity = models.CharField(max_length=20)
+    rule_id = models.CharField(max_length=50)
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    line = models.IntegerField()
+    column = models.IntegerField(default=0)
+    reference = models.URLField(blank=True)
+
+    # New fields to track exact file
+    file_hash = models.CharField(max_length=64, db_index=True, null=True, blank=True)
+    file_name = models.CharField(max_length=255, null=True, blank=True)
+
+    class Meta:
+        ordering = ["line", "column"]
+        unique_together = ("run", "rule_id", "line", "column", "file_hash")
+
+    def __str__(self):
+        return f"{self.severity} {self.rule_id} (line {self.line}) [{self.file_name}]"
