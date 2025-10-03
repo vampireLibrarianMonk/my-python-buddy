@@ -1,3 +1,7 @@
+# Native
+from collections import OrderedDict
+
+# Django
 from django.conf import settings
 from django.db import models
 from django.db.models.signals import post_save
@@ -56,6 +60,24 @@ class SubmittedFile(models.Model):
         return f"{self.saved_name} ({self.sha256[:12]}…)"
 
 
+def severity_default():
+    return OrderedDict(
+        [
+            ("low", 0),
+            ("medium", 0),
+            ("high", 0),
+        ],
+    )
+
+
+def severity_color_map():
+    return {
+        "low": {"bg": "#FFEB3B", "fg": "#000000"},  # Bright Yellow, black text
+        "medium": {"bg": "#FF9800", "fg": "#ffffff"},  # Orange, white text
+        "high": {"bg": "#F44336", "fg": "#ffffff"},  # Strong Red, white text
+    }
+
+
 class Run(models.Model):
     class Status(models.TextChoices):
         PENDING = "PENDING", "Pending"
@@ -70,7 +92,7 @@ class Run(models.Model):
     started_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     findings_count = models.IntegerField(default=0)
-    severity_counts = models.JSONField(default=dict, blank=True)
+    severity_counts = models.JSONField(default=severity_default, blank=True)
 
     class Meta:
         ordering = ["-started_at"]
