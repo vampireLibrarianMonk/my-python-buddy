@@ -65,28 +65,32 @@ uvicorn core.asgi:application --host 127.0.0.1 --port 8443   --ssl-certfile loca
 ---
 
 ## User Setup
+
 ### Create an admin account for Django's built-in authentication, administration and login system.
+
 ```bash
 python manage.py createsuperuser
 ```
 
 ### Choose a username for the superuser, default is your username.
+
 ```bash
-Username (leave blank to use '$USER'): 
+Username (leave blank to use '$USER'):
 Optional Email (only for when site has email server capability)
 Email address: pmf141@psu.edu
 Set the superuser's password and then confirm it.
-Password: 
-Password (again): 
+Password:
+Password (again):
 Confirmation of successfully created account
 Superuser created successfully.
 ```
 
 ### Regular User Creation (modify the three environment variables)
+
 ```bash
 export DJANGO_SUPERUSER_USERNAME="regularUser"
 export DJANGO_SUPERUSER_EMAIL="UserReg@anemail.com"
-export DJANGO_SUPERUSER_PASSWORD="SuperSecureP@\$\$W0RD"
+export DJANGO_SUPERUSER_PASSWORD=# Fill in password
 
 python manage.py shell -c "
 from django.contrib.auth import get_user_model;
