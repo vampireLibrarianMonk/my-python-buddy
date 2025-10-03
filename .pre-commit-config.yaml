@@ -142,7 +142,7 @@ repos:
     rev: "1.7.6"
     hooks:
       - id: bandit
-        args: ["-x", "tests"]
+        args: ["-x", "tests,sample_files"]
 
   # detect-secrets:
   # Detects secrets like API keys or credentials in code.
