@@ -2,7 +2,7 @@ name: Code Coverage → GitHub Pages
 
 on:
   push:
-    branches: [base-scaffolding]
+    branches: [base-scaffolding, analyzer-scaffolding]
     paths:
       - "base_application/tests/**"
   workflow_dispatch:
