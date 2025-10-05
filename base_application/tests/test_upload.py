@@ -1,16 +1,21 @@
+# Native
 import os
 import shutil
 import tempfile
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+# Django
 from django.conf import settings as dj_settings
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
+
+# Environment Pull
 from dotenv import load_dotenv
 
+# Models
 from base_application.models import AccountProfile, SubmittedFile
 
 # Environment settings load and adjustment per needs of test environment
@@ -172,19 +177,22 @@ class UploadViewTests(TestCase):
         return parse_qs(urlparse(resp["Location"]).query).get("f", [None])[0]
 
     # Test Specification Location: documentation/test/unit/UT-11-08.md
-    def test_duplicate_content_creates_single_row(self):
+    def test_duplicate_content_prompts_reanalyze(self):
         content = b"print('same')\n"
         upload_one = SimpleUploadedFile("a.py", content, content_type="text/x-python")
         response_one = self.client.post(reverse("upload"), {"file": upload_one}, follow=False)
-        self.assertEqual(response_one.status_code, 302)
+        self.assertEqual(response_one.status_code, 302)  # first upload redirects
         file_name_one = self._fname_from_redirect(response_one)
 
         upload_two = SimpleUploadedFile("b.py", content, content_type="text/x-python")
-        response_two = self.client.post(reverse("upload"), {"file": upload_two}, follow=False)
-        self.assertEqual(response_two.status_code, 302)
-        file_name_two = self._fname_from_redirect(response_two)
+        response_two = self.client.post(reverse("upload"), {"file": upload_two}, follow=True)
+        self.assertEqual(response_two.status_code, 200)  # duplicate upload renders page with prompt
+
+        # Ensure duplicate modal is present in HTML
+        self.assertContains(response_two, "Do you want to reanalyze it?")
 
         # Expect same saved file and exactly one database row (since primary is SHA256)
+        file_name_two = SubmittedFile.objects.first().saved_name
         self.assertEqual(file_name_one, file_name_two)
         self.assertEqual(SubmittedFile.objects.count(), 1)
 
@@ -216,7 +224,7 @@ class UploadViewTests(TestCase):
         path = os.path.join(TEMP_MEDIA, "uploads", saved)
         self.assertTrue(os.path.exists(path))
 
-    # Test Specification Location: documentation/test/unit/UT-11-11.md TODO
+    # Test Specification Location: documentation/test/unit/UT-11-11.md
     def test_success_page_handles_missing_db_record(self):
         # Manually save a file without a SubmittedFile record
         file_name = "manual.py"
@@ -230,7 +238,7 @@ class UploadViewTests(TestCase):
         self.assertContains(resp, file_name)  # Still renders the filename
         self.assertContains(resp, f"/media/uploads/{file_name}")
 
-    # Test Specification Location: documentation/test/unit/UT-11-12.md TODO
+    # Test Specification Location: documentation/test/unit/UT-11-12.md
     def test_success_redirects_if_filename_missing(self):
         response = self.client.get(reverse("upload_success"))  # No ?f= in querystring
         self.assertEqual(response.status_code, 302)  # Redirect

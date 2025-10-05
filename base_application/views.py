@@ -6,14 +6,14 @@ import time
 from pathlib import Path
 from urllib.parse import quote as urlquote
 
+# Django
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import PasswordChangeView
-
-# Django
 from django.core.paginator import Paginator
 from django.db import transaction
+from django.db.models import Case, IntegerField, Value, When
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -21,11 +21,17 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods
 
+# Models
+from base_application.models import Run, severity_color_map
+
+# Tasking
+from base_application.taskings import executor, run_analyzer_task
+
 # Local
 from .forms import AnalyzerSelectForm, UploadPyForm
 from .models import SubmittedFile
 
-# First phase templating until analyzers are implemented
+# First phase templating until analyzers are implemented TODO delete once all analyzers are implemented.
 SAMPLE_FINDINGS_MAP_TEMPLATE = {
     "bandit": [
         {
@@ -96,6 +102,9 @@ def _safe_unique_py_name(original_filename: str) -> str:
 
 
 def _sha256_of_upload(uploaded_file) -> str:
+    """
+    Secure Hashing Algorithm 256 implementation for unique file entries ID (primary keys) in database.
+    """
     hasher = hashlib.sha256()
     for chunk in uploaded_file.chunks():
         hasher.update(chunk)
@@ -105,26 +114,38 @@ def _sha256_of_upload(uploaded_file) -> str:
 @login_required
 @require_http_methods(["GET", "POST"])
 def upload_view(request):
-    # --- Handle upload ---
+    # Upload Handling
     if request.method == "POST":
         form = UploadPyForm(request.POST, request.FILES)
         if form.is_valid():
             uploaded = form.cleaned_data["file"]
 
-            # 1) Hash
+            # 1) Hash the file
             file_hash = _sha256_of_upload(uploaded)
 
             # 2) If identical file already tracked, reuse it (no duplicate save)
             existing = SubmittedFile.objects.filter(pk=file_hash).first()
             if existing:
-                messages.info(
+                # Build the same pagination context used at the end of the view
+                page_size = int(request.GET.get("ps", 10))
+                paginator = Paginator(SubmittedFile.objects.order_by("-uploaded_at"), page_size)
+                page_number = request.GET.get("page", 1)
+                page_obj = paginator.get_page(page_number)
+
+                return render(
                     request,
-                    f"Identical file already exists (SHA-256: {file_hash[:12]}…). Using existing copy.",
+                    "base_application/upload.html",
+                    {
+                        "form": form,
+                        "page_obj": page_obj,
+                        "page_size": page_size,
+                        "duplicate_file": existing,  # The html template will trigger confirm prompt
+                        "severity_colors": severity_color_map(),
+                    },
                 )
-                return redirect(f"/success/?f={urlquote(os.path.basename(existing.file.name))}")
 
             # 3) New file: sanitize + unique name, then save via FileField
-            safe_name = _safe_unique_py_name(uploaded.name)  # you already have this helper
+            safe_name = _safe_unique_py_name(uploaded.name)
 
             with transaction.atomic():
                 record = SubmittedFile(
@@ -142,7 +163,7 @@ def upload_view(request):
     else:
         form = UploadPyForm()
 
-    # --- List: paginated table of prior uploads ---
+    # List: paginated table of prior uploads
     ps = request.GET.get("ps", "10")
     page_size = int(ps) if ps.isdigit() else 10
     page_size = max(1, min(100, page_size))  # Clamp to 1–100
@@ -159,6 +180,7 @@ def upload_view(request):
             "form": form,
             "page_obj": page_obj,
             "page_size": page_size,
+            "severity_colors": severity_color_map(),
         },
     )
 
@@ -166,7 +188,7 @@ def upload_view(request):
 @login_required
 @require_http_methods(["POST"])
 def delete_file_view(request, sha256):
-    """Delete database record and the stored file. Requires POST + CSRF; confirms in UI."""
+    """Delete database record and the stored file. Requires POST + CSRF; confirms in user interface."""
     obj = get_object_or_404(SubmittedFile, pk=sha256)
     # Delete file from storage first (don't save model after delete file)
     obj.file.delete(save=False)
@@ -228,7 +250,6 @@ def healthcheck_view(request):
 def analyze_file_view(request, sha256: str):
     obj = get_object_or_404(SubmittedFile, pk=sha256)
 
-    # GET → show selection form (preselect previously used analyzers)
     if request.method == "GET":
         initial = {"file_name": os.path.basename(obj.file.name)}
         if obj.analysis_analyzers:
@@ -237,78 +258,125 @@ def analyze_file_view(request, sha256: str):
         return render(
             request,
             "base_application/analyze_select.html",
-            {"file_name": obj.saved_name, "sha256": obj.sha256, "form": form},
+            {
+                "file_name": obj.saved_name,
+                "sha256": obj.sha256,
+                "form": form,
+                "selected_analyzers": initial.get("analyzers", []),  # pre-fill JavaScript context
+            },
         )
 
-    # POST → run placeholder, update status fields, render split pane
+    # POST --> user selected one or more analyzers
     form = AnalyzerSelectForm(request.POST)
     if not form.is_valid():
         messages.error(request, "Please choose at least one analyzer.")
         return redirect("analyze_file", sha256=obj.sha256)
 
     selected = list(form.cleaned_data["analyzers"])
-    llm_text = (form.cleaned_data.get("llm_notes") or "").strip()
+    # llm_text = (form.cleaned_data.get("llm_notes") or "").strip()
 
-    # Read code
-    path = obj.file.path
-    try:
-        with open(path, "r", encoding="utf-8", errors="replace") as f:
-            code_text = f.read()
-    except Exception as e:
-        obj.analysis_status = SubmittedFile.AnalysisStatus.FAILED
-        obj.analysis_analyzers = ",".join(selected)
-        obj.analysis_findings = 0
-        obj.analyzed_at = timezone.now()
-        obj.save(update_fields=["analysis_status", "analysis_analyzers", "analysis_findings", "analyzed_at"])
-        messages.error(request, f"Unable to read file: {e}")
-        return redirect("upload")
-
-    code_lines = code_text.splitlines()
-
-    # Preserve UI order
+    # Preserve user interface order
     choice_order = [key for key, _label in AnalyzerSelectForm.ANALYZER_CHOICES]
     ordered_selection = [a for a in choice_order if a in selected]
 
-    # Compose placeholder findings
-    findings = []
+    # Ensure Run objects exist with status = REQUESTED
     for analyzer in ordered_selection:
-        findings.extend(SAMPLE_FINDINGS_MAP_TEMPLATE.get(analyzer, []))
+        Run.objects.get_or_create(
+            submitted_file=obj,
+            analyzer=analyzer,
+            defaults={
+                "status": Run.Status.REQUESTED,
+                "started_at": timezone.now(),
+            },
+        )
 
-    # ✅ Persist status
-    obj.analysis_status = SubmittedFile.AnalysisStatus.COMPLETE
-    obj.analysis_analyzers = ",".join(ordered_selection)
-    obj.analysis_findings = len(findings)
-    obj.analyzed_at = timezone.now()
-    obj.save(update_fields=["analysis_status", "analysis_analyzers", "analysis_findings", "analyzed_at"])
-
-    results_template = {
-        "summary": {
-            "file": obj.saved_name,
-            "analyzers_requested": ordered_selection,
-            "notes": "Sample placeholder results shown per selected analyzer. Replace with real tool outputs when integrated.",
-        },
-        "findings": findings,
-        "how_to_read": (
-            "This pane shows static analysis results. Each finding includes a severity, a rule ID, an explanation, "
-            "and a source location (line/column). When you wire up real analyzers, populate this structure (or similar) "
-            "and render it here."
-        ),
-        "llm_placemarker": {
-            "text": llm_text,
-        },
-    }
-
+    # Skip analyzing in this view – leave that to the run_analyzer endpoint
     return render(
         request,
-        "base_application/analyze.html",
+        "base_application/analyze_select.html",
         {
             "file_name": obj.saved_name,
-            "code_lines": code_lines,
+            "sha256": obj.sha256,
+            "form": form,
             "selected_analyzers": ordered_selection,
-            "results": results_template,
-            "file_url": settings.MEDIA_URL + "uploads/" + obj.saved_name,
         },
     )
+
+
+@require_http_methods(["POST"])
+@login_required
+def run_analyzer(request, sha256: str, analyzer: str):
+    submitted_file = get_object_or_404(SubmittedFile, pk=sha256)
+
+    try:
+        run = Run.objects.get(submitted_file=submitted_file, analyzer=analyzer)
+    except Run.DoesNotExist:
+        return JsonResponse({"status": "Error: Run not initialized"}, status=400)
+
+    # Immediately mark as requested (assumes this was done earlier)
+    run.status = "REQUESTED"
+    run.save(update_fields=["status"])
+
+    # Enqueue background job (non-blocking)
+    executor.submit(run_analyzer_task, run.id, run.analyzer)
+
+    return JsonResponse({"status": "Queued"})
+
+
+@login_required
+def bandit_status_json(request):
+    files = SubmittedFile.objects.all().order_by("-uploaded_at")
+    data = {}
+
+    for f in files:
+        run = f.runs.filter(analyzer="bandit").order_by("-started_at").first()
+        if run:
+            # Always return one of the defined status values
+            status = run.status or "PENDING"
+            data[f.sha256] = {
+                "status": status,
+                "findings_count": run.findings_count,
+                "run_id": run.id,
+            }
+        else:
+            # No Run yet --> explicitly "NOT_REQUESTED"
+            data[f.sha256] = {
+                "status": "NOT_REQUESTED",
+                "findings_count": 0,
+                "run_id": None,
+            }
+
+    return JsonResponse(data)
+
+
+def run_detail(request, pk):
+    run = get_object_or_404(Run, pk=pk)
+    submitted_file = run.submitted_file
+
+    # Read file content safely
+    file_content = ""
+    try:
+        with submitted_file.file.open("rb") as f:
+            file_content = f.read().decode("utf-8", errors="replace")
+    except (FileNotFoundError, OSError, UnicodeDecodeError):
+        file_content = "[Error: Could not read Python file contents]"
+
+    # Build severity order from the run's OrderedDict (fallback provided)
+    sev_order_list = list(getattr(run, "severity_counts", {}).keys()) or ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    sev_cases = [When(severity=key, then=Value(idx)) for idx, key in enumerate(sev_order_list)]
+
+    # Annotate rank and order by it (stable tie-breakers: line, column, id)
+    findings_qs = run.findings.annotate(sev_rank=Case(*sev_cases, default=Value(999), output_field=IntegerField())).order_by("sev_rank", "line", "column", "id")
+
+    context = {
+        "run": run,
+        "file_content": file_content.splitlines(),
+        "file_hash": run.submitted_file.sha256,
+        "file_name": run.submitted_file.saved_name,
+        "findings": findings_qs,
+        "severity_colors": severity_color_map(),
+    }
+    return render(request, "base_application/run_detail.html", context)
 
 
 class MustChangePasswordView(PasswordChangeView):

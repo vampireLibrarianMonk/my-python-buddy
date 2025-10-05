@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% load custom_tags %}
+{% block title %}Run Details · my-python-buddy{% endblock %}
+{% block content %}
+<h1>Analysis Results for {{ run.analyzer|title }} ({{ run.analyzer_version }})</h1>
+
+{% with ref=run.findings.first.reference %}
+{% if ref and ref|slice:":4" == "http" %}
+<p><strong>Documentation:</strong>
+    <a href="{{ ref }}" rel="noopener noreferrer" target="_blank">{{ ref }}</a>
+</p>
+{% else %}
+<p><strong>Documentation:</strong> {{ ref|default_if_none:"N/A"|escape }}</p>
+{% endif %}
+{% endwith %}
+
+<p><strong>File:</strong> {{ run.submitted_file.original_name }}</p>
+<p><strong>Status:</strong> {{ run.status }}</p>
+<p><strong>Findings:</strong> {{ run.findings_count }}</p>
+<p><strong>Started:</strong> {{ run.started_at }}</p>
+<p><strong>Completed:</strong> {{ run.completed_at }}</p>
+
+<h2>Findings</h2>
+{% if run.findings.exists %}
+<table class="table" id="findingsTable">
+    <thead>
+    <tr>
+        <th data-sort="severity">Severity ⬍</th>
+        <th data-sort="rule">Rule ID ⬍</th>
+        <th data-sort="message">Message ⬍</th>
+        <th data-sort="line">Line ⬍</th>
+        <th data-sort="column">Column ⬍</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for finding in findings %}
+    <tr class="finding-row"
+        data-jump-col="{{ finding.column|default:0 }}"
+        data-jump-line="{{ finding.line }}"
+        data-severity="{{ finding.severity|lower }}">
+        <td>
+          {% with sev=finding.severity|lower %}
+          <span class="badge"
+                style="background-color: {{ severity_colors|get_item:sev|get_item:'bg' }};
+                       color: {{ severity_colors|get_item:sev|get_item:'fg' }};">
+            {{ finding.severity|title }}
+          </span>
+          {% endwith %}
+        </td>
+        <td>{{ finding.rule_id }}</td>
+        <td>{{ finding.message }}</td>
+        <td>{{ finding.line }}</td>
+        <td>{{ finding.column }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<script>
+    (function () {
+      const table = document.getElementById("findingsTable");
+      const headers = table.querySelectorAll("th[data-sort]");
+
+      // Click-to-sort logic (just reverse)
+      headers.forEach((th) => {
+        let asc = true;
+        th.style.cursor = "pointer";
+        th.addEventListener("click", () => {
+          const rows = Array.from(table.tBodies[0].rows);
+
+          // Simply reverse the current order instead of recalculating
+          if (!asc) {
+            rows.reverse();
+          }
+
+          rows.forEach(row => table.tBodies[0].appendChild(row));
+          asc = !asc;
+        });
+      });
+    })();
+</script>
+
+
+<h2>Source Code</h2>
+<style>
+    /* IDE look & feel */
+    .code-viewer {
+      border: 1px solid #444; background:#1e1e1e; color:#f5f5f5;
+      font-family: monospace; overflow-x: auto; border-radius: 6px;
+      outline: none;
+    }
+    .code-table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.4; table-layout: fixed; }
+    .code-row { transition: background-color 0.15s; }
+    .code-row:nth-child(odd)  { background-color: #1e1e1e; }
+    .code-row:nth-child(even) { background-color: #252526; }
+    .code-row.line-highlight td { background-color: #333a45 !important; }
+    .gutter {
+      text-align: right; padding: 0 .75rem; color:#888; user-select:none; white-space:nowrap;
+      border-right: 1px solid #333; width: 1%;
+    }
+    .code-cell {
+      position: relative; padding: 0 .75rem; white-space: pre; font-family: monospace;
+      --pad-left: .75rem;  /* used in column marker calc */
+    }
+    /* Thin vertical column highlight (1ch wide), positioned via --col */
+    .col-highlight {
+      position: absolute; top: 0; bottom: 0; width: 1ch; background: #ffd54a66;
+      left: calc((var(--col, 1) - 1) * 1ch + var(--pad-left));
+      pointer-events: none;
+    }
+    /* Hover line effect like Visual Studio Code */
+    .code-viewer table tbody tr:hover { background-color: #333a45 !important; }
+</style>
+
+<div class="code-viewer" id="codeViewer" tabindex="-1">
+    <table class="code-table">
+        <tbody>
+        {% for line in file_content %}
+        <tr class="code-row" id="L{{ forloop.counter }}">
+            <!-- Gutter -->
+            <td class="gutter">{{ forloop.counter }}</td>
+            <!-- Code cell -->
+            <td class="code-cell" data-lineno="{{ forloop.counter }}">
+                {{ line|escape }}
+                <i class="col-highlight" hidden></i>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+  const severityColors = {{ severity_colors|safe }};
+</script>
+
+<script>
+    (function () {
+      const codeViewer = document.getElementById('codeViewer');
+
+      function clearHighlights() {
+        document.querySelectorAll('.code-row.line-highlight').forEach(row => {
+          row.classList.remove('line-highlight');
+          row.style.backgroundColor = '';  // reset row color
+          const marker = row.querySelector('.col-highlight');
+          if (marker) { marker.hidden = true; marker.style.backgroundColor = ''; }
+        });
+      }
+
+      function jumpTo(line, col, severity) {
+        const row = document.getElementById('L' + line);
+        if (!row) return;
+
+        clearHighlights();
+
+        // Apply highlight with dynamic severity color
+        row.classList.add('line-highlight');
+        if (severity && severityColors[severity]) {
+          row.style.backgroundColor = severityColors[severity].bg;
+        }
+
+        // Column marker
+        const marker = row.querySelector('.col-highlight');
+        const colNum = Math.max(1, parseInt(col || 0, 10));
+        if (marker && colNum > 0) {
+          marker.style.setProperty('--col', colNum);
+          marker.hidden = false;
+          if (severity && severityColors[severity]) {
+            marker.style.backgroundColor = severityColors[severity].bg;
+          }
+        }
+
+        // Scroll into view
+        row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        codeViewer.focus({ preventScroll: true });
+
+        // Update hash
+        const suffix = colNum ? ('-C' + colNum) : '';
+        history.replaceState(null, '', '#L' + line + suffix);
+      }
+
+      // Attach row click handlers
+      document.querySelectorAll('.finding-row').forEach(tr => {
+        tr.addEventListener('click', function () {
+          document.querySelectorAll('.finding-row.active').forEach(r => r.classList.remove('active'));
+          this.classList.add('active');
+
+          const line = this.getAttribute('data-jump-line');
+          const col = this.getAttribute('data-jump-col');
+          const severity = this.getAttribute('data-severity');
+          jumpTo(line, col, severity);
+        });
+      });
+
+      // Check if the URL contains a line and column reference (e.g. Line 42/Column 3) and if so scroll directly to that
+      // specific code line and highlight its severity.
+      const m = location.hash.match(/^#L(\d+)(?:-C(\d+))?$/);
+      if (m) {
+        const deepLinkRow = document.getElementById('L' + m[1]);
+        const severity = deepLinkRow ? deepLinkRow.getAttribute('data-severity') : null;
+        jumpTo(m[1], m[2], severity);
+      }
+    })();
+</script>
+
+{% else %}
+<p class="muted">No findings recorded.</p>
+{% endif %}
+{% endblock %}

@@ -2,31 +2,76 @@
 {% block title %}Select analyzers · my-python-buddy{% endblock %}
 
 {% block content %}
-  <h1>Select analyzers</h1>
-  <!-- Display filename upon initiating analysis for user context -->
-  <p class="muted">File: <code>{{ file_name }}</code></p>
+<h1>Select analyzers</h1>
+<p class="muted">File: <code>{{ file_name }}</code></p>
 
-  <div class="card">
-    <form method="post" action="">
-      {% csrf_token %}
-      {{ form.file_name }}  {# hidden field to carry saved_name across requests #}
+<div class="card">
+  <form method="post" action="">
+    {% csrf_token %}
+    {{ form.file_name }} {# hidden field to carry saved_name across requests #}
 
-      <!-- Allow user to select one or more tools to run on the .py file -->
-      <label for="{{ form.analyzers.id_for_label }}">Analyzers</label>
-      {{ form.analyzers }}
-      {% if form.analyzers.help_text %}
-        <div class="muted small">{{ form.analyzers.help_text }}</div>
-      {% endif %}
-      {% if form.analyzers.errors %}
-        <!-- Error messages appear below the selector -->
-        <div class="errors">{{ form.analyzers.errors }}</div>
-      {% endif %}
+    <label for="{{ form.analyzers.id_for_label }}">Analyzers</label>
+    {{ form.analyzers }}
+    {% if form.analyzers.help_text %}
+      <div class="muted small">{{ form.analyzers.help_text }}</div>
+    {% endif %}
+    {% if form.analyzers.errors %}
+      <div class="errors">{{ form.analyzers.errors }}</div>
+    {% endif %}
 
-      <!-- Primary user actions (1) Submission for file analysis or (2) Return to upload page -->
-      <div style="margin-top:.8rem;">
-        <button class="btn" type="submit">Run analysis</button>
-        <a class="btn" href="{% url 'upload' %}">Back</a>
-      </div>
-    </form>
-  </div>
+    <div style="margin-top:.8rem;">
+      <button class="btn" type="submit" id="run-analysis-btn">Run analysis</button>
+      <a class="btn" href="{% url 'upload' %}">Back</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.querySelector("form");
+    const button = document.getElementById("run-analysis-btn");
+
+    if (form && button) {
+      form.addEventListener("submit", function () {
+        button.disabled = true;
+        button.classList.add("btn-disabled");
+        button.textContent = "Running…";
+      });
+    }
+
+    {% if selected_analyzers %}
+    console.log("Analyzer status JS loaded");
+    const analyzers = {{ selected_analyzers|safe }};
+    const sha256 = "{{ sha256 }}";
+    const csrfToken = "{{ csrf_token }}";
+
+    function updateStatus(analyzer, statusText) {
+      console.log(`[${analyzer}] ${statusText}`);
+    }
+
+    async function runAnalyzer(analyzer) {
+      try {
+        const response = await fetch(`/run-analyzer/${sha256}/${analyzer}/`, {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": csrfToken,
+          },
+        });
+
+        const result = await response.json();
+        updateStatus(analyzer, result.status || "Unknown");
+      } catch (err) {
+        updateStatus(analyzer, "Failed");
+        console.error("Error running analyzer", analyzer, err);
+      }
+    }
+
+    // Run all analyzers (thread executors in python will run)
+    Promise.all(analyzers.map(runAnalyzer)).then(() => {
+      console.log("All analyzers triggered. Redirecting...");
+      window.location.href = "{% url 'upload' %}";
+    });
+    {% endif %}
+  });
+</script>
 {% endblock %}
