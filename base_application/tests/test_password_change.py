@@ -1,13 +1,18 @@
+# Native
 import os
 import secrets
 
+# Django
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import RequestFactory, TestCase
 from django.utils.crypto import get_random_string
 
+# Models
 from base_application.models import AccountProfile
+
+# Views
 from base_application.views import MustChangePasswordView
 
 

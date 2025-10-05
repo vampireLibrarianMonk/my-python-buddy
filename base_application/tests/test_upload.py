@@ -26,6 +26,7 @@ load_dotenv(BASE_DIR / ".env")
 ALLOWED_HOSTS = [h for h in os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",") if h]
 ALLOWED_HOSTS.append("testserver")
 
+# Media storage
 MEDIA_URL_ENV = os.getenv("DJANGO_MEDIA_URL", "/media/")
 
 # Temporary media root for these tests
