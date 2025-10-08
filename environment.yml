@@ -106,6 +106,8 @@ dependencies:
       - starlette==0.48.0
       - stevedore==5.5.0
       - tomli==2.0.2
+      - types-pyyaml==6.0.12.20250915
+      - types-requests==2.32.4.20250913
       - typing-inspection==0.4.1
       - urllib3==2.5.0
       - uvicorn==0.35.0
