@@ -1,21 +1,44 @@
 # Native
-from collections import Counter, OrderedDict
+import json
+import re
+import subprocess  # nosec B404: subprocess is used safely with shell=False and fixed arguments
+from collections import Counter, OrderedDict, defaultdict
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as get_version
 
 # Analyzers
+# Bandit
 from bandit.core.config import BanditConfig
 from bandit.core.manager import BanditManager
 
 # Django
 from django.utils import timezone
 
+# Dodgy
+from dodgy.checks import check_file_contents
+
+# MyPy
+from mypy import api as mypy_api
+
+# Vulture
+from vulture import Vulture
+
 # Models
 from .models import Finding, Run
 
-# from dodgy.checks import check_file_contents TODO
-# from mypy import api TODO
-# from vulture import Vulture TODO
+
+def detect_frameworks_in_file(file_path: str) -> set:
+    frameworks = set()
+
+    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        content = f.read().lower()
+
+    if "import django" in content or "from django" in content:
+        frameworks.add("django")
+    if "import flask" in content or "from flask" in content:
+        frameworks.add("flask")
+
+    return frameworks
 
 
 def get_analyzer_version(analyzer):
@@ -83,6 +106,404 @@ def run_bandit_analyzer(run):
 
     except Exception as e:
         run.status = "ERRORED"
+        run.completed_at = timezone.now()
+        run.save(update_fields=["status", "completed_at"])
+        return {"error": str(e)}
+
+
+def run_dodgy_analyzer(run):
+    try:
+        file_path = run.submitted_file.file.path
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            file_contents = f.read()
+
+        # Run Dodgy checks on the file contents
+        issues = check_file_contents(file_contents)
+
+        # Parse each issue into the Finding model
+        for line_number, variable_name, reason in issues:
+            message = f"{reason} (variable: {variable_name})"
+            Finding.objects.get_or_create(
+                run=run,
+                severity="DODGY",
+                rule_id="DODGY",
+                title=f"Dodgy variable '{variable_name}' detected",
+                message=message,
+                line=line_number,
+                column=0,
+                reference="https://github.com/landscapeio/dodgy",
+                file_hash=run.submitted_file.sha256,
+                file_name=run.submitted_file.saved_name,
+            )
+
+        # === Dodginess metric ===
+        dodgy_count = run.findings.count()
+        run.severity_counts = OrderedDict([("DODGIES", dodgy_count)])
+
+        run.analyzer_version = get_analyzer_version("dodgy")
+        run.findings_count = dodgy_count
+        run.completed_at = timezone.now()
+        run.status = Run.Status.COMPLETED
+        run.save(
+            update_fields=[
+                "status",
+                "completed_at",
+                "findings_count",
+                "severity_counts",
+                "analyzer_version",
+            ],
+        )
+        return {"results": list(run.findings.values())}
+
+    except Exception as e:
+        run.status = Run.Status.ERRORED
+        run.completed_at = timezone.now()
+        run.save(update_fields=["status", "completed_at"])
+        return {"error": str(e)}
+
+
+def run_mypy_analyzer(run):
+    try:
+        file_path = run.submitted_file.file.path
+
+        # Run mypy with diagnostic flags for rule codes and columns
+        stdout, stderr, exit_code = mypy_api.run(
+            [
+                "--show-error-codes",  # include mypy error codes
+                "--show-column-numbers",  # show column for findings
+                "--disallow-untyped-defs",  # flag untyped functions
+                "--warn-return-any",  # warn on Any return type
+                "--warn-unused-ignores",  # warn on unused ignores
+                "--ignore-missing-imports",  # suppress crash on missing libs
+                "--show-error-context",  # include 'note:' follow-ups
+                "--no-error-summary",  # keep raw output readable
+                file_path,  # target file path
+            ],
+        )
+
+        # If mypy fails entirely with no output
+        if exit_code != 0 and not stdout:
+            run.status = Run.Status.ERRORED
+            run.completed_at = timezone.now()
+            run.save(update_fields=["status", "completed_at"])
+            return {"error": stderr}
+
+        # Skip "no issues" message
+        if "Success: no issues found" in stdout:
+            run.status = Run.Status.COMPLETED
+            run.completed_at = timezone.now()
+            run.findings_count = 0
+            run.analyzer_version = get_analyzer_version("mypy")
+            run.save(
+                update_fields=[
+                    "status",
+                    "completed_at",
+                    "findings_count",
+                    "analyzer_version",
+                ],
+            )
+            return {"results": []}
+
+        # Pattern: file:line[:col]: type: message [error-code]
+        pattern = re.compile(
+            r"^(?P<file>.+?):(?P<line>\d+)(?::(?P<col>\d+))?:\s*(?P<type>\w+):\s*(?P<message>.*?)(?:\s*\[(?P<code>[-\w]+)\])?$",
+        )
+
+        # === Simple sequential rule_id counter ===
+        counter = 1
+
+        for line in stdout.splitlines():
+            line = line.strip()
+            match = pattern.match(line)
+            if not match:
+                # Skip footer lines like "Found X error(s)" or lone numbers
+                if not line.startswith("Found ") and not line.isdigit():
+                    Finding.objects.create(
+                        run=run,
+                        severity="note",
+                        rule_id=f"MYPY-{counter:03d}",
+                        title="Unparsed MyPy Output",
+                        message=line,
+                        line=0,
+                        column=0,
+                        reference="https://mypy.readthedocs.io/",
+                        file_hash=run.submitted_file.sha256,
+                        file_name=run.submitted_file.saved_name,
+                    )
+                    counter += 1
+                continue
+
+            data = match.groupdict()
+            file_name = run.submitted_file.saved_name
+            line_num = int(data.get("line") or 0)
+            col_num = int(data.get("col") or 0)
+            msg_type = data.get("type", "error").lower()
+            message = data.get("message", "").strip()
+
+            # Map directly to Mypy categories
+            if msg_type == "error":
+                severity = "error"
+            else:
+                severity = "note"
+
+            rule_id = f"MYPY-{counter:03d}"
+            counter += 1
+
+            Finding.objects.create(
+                run=run,
+                severity=severity,
+                rule_id=rule_id,
+                title="Type Checking Issue",
+                message=message,
+                line=line_num,
+                column=col_num,
+                reference="https://mypy.readthedocs.io/",
+                file_hash=run.submitted_file.sha256,
+                file_name=file_name,
+            )
+
+        # Simple counts by category
+        category_counter = Counter(
+            Finding.objects.filter(run=run).values_list("severity", flat=True),
+        )
+
+        run.severity_counts = OrderedDict(
+            [
+                ("note", category_counter.get("note", 0)),
+                ("error", category_counter.get("error", 0)),
+            ],
+        )
+
+        # Metadata + completion
+        run.analyzer_version = get_analyzer_version("mypy")
+        run.findings_count = run.findings.count()
+        run.completed_at = timezone.now()
+        run.status = Run.Status.COMPLETED
+        run.save(
+            update_fields=[
+                "status",
+                "completed_at",
+                "findings_count",
+                "severity_counts",
+                "analyzer_version",
+            ],
+        )
+
+        return {"results": list(run.findings.values())}
+
+    except Exception as e:
+        run.status = Run.Status.ERRORED
+        run.completed_at = timezone.now()
+        run.save(update_fields=["status", "completed_at"])
+        return {"error": str(e)}
+
+
+def run_semgrep_analyzer(run):
+    try:
+        file_path = run.submitted_file.file.path
+
+        frameworks = detect_frameworks_in_file(file_path)
+
+        semgrep_configs = [
+            ("p/default", "default"),  # General security checks
+            ("p/owasp-top-ten", "owasp-top-ten"),  # OWASP Top Ten risks
+            ("p/python", "python"),  # Python-specific issues
+            ("p/comment", "comment"),  # TODO/FIXME and notes
+            ("p/security-audit", "security-audit"),  # Audit-focused findings
+        ]
+
+        if "django" in frameworks:
+            semgrep_configs.append(("p/django", "django"))
+        if "flask" in frameworks:
+            semgrep_configs.append(("p/flask", "flask"))
+
+        # Normalize older severities → modern equivalents
+        severity_map = {
+            "INFO": "LOW",
+            "WARNING": "MEDIUM",
+            "ERROR": "HIGH",
+        }
+
+        seen = set()  # (check_id, severity, line, msg)
+        for config, label in semgrep_configs:
+            cmd = [
+                "semgrep",
+                "--config",
+                config,
+                "--json",
+                "--metrics",
+                "off",
+                "--disable-version-check",
+                file_path,
+            ]
+            result = subprocess.run(  # nosec B603: shell=False, trusted cmd list, no untrusted input
+                cmd,
+                capture_output=True,
+                text=True,
+                check=False,
+                shell=False,
+            )
+
+            # Semgrep exit codes: 0 = no findings, 1 = findings
+            if result.returncode not in (0, 1):
+                print(f"[Semgrep] {config} failed: {result.stderr.strip()}")
+                continue  # Don’t abort entire analyzer — just skip this pack
+
+            try:
+                data = json.loads(result.stdout or "{}")
+            except json.JSONDecodeError as je:
+                print(f"[Semgrep JSON Error] {config}: {je}")
+                continue
+
+            for issue in data.get("results", []):
+                check_id = issue.get("check_id", "UNKNOWN")
+                msg = issue.get("extra", {}).get("message", "")
+                sev_raw = (issue.get("extra", {}).get("severity", "LOW") or "LOW").strip().upper()
+                sev = severity_map.get(sev_raw, sev_raw)  # normalize old → new
+                start = issue.get("start", {}) or {}
+                line = int(start.get("line", 0) or 0)
+                col = int(start.get("col", 0) or 0)
+                rule_url = issue.get("extra", {}).get("metadata", {}).get("source", "https://semgrep.dev/rules")
+
+                key = (check_id, sev, line, msg)
+                if key in seen:
+                    continue
+                seen.add(key)
+
+                try:
+                    Finding.objects.get_or_create(
+                        run=run,
+                        severity=sev,
+                        rule_id=check_id,
+                        title=f"Semgrep ({label}): {check_id}",
+                        message=msg,
+                        line=line,
+                        column=col,
+                        reference=rule_url,
+                        file_hash=run.submitted_file.sha256,
+                        file_name=run.submitted_file.saved_name,
+                    )
+                except Exception as fe:
+                    print(f"[Semgrep Finding Error] {fe}")
+
+        # Unified severity breakdown
+        # All Semgrep rules have one of four severity levels: Critical, High, Medium, or Low.
+        # The levels ERROR, WARNING and INFO used in existing rules are older values that correspond to High, Medium
+        # and Low, respectively.
+        severity_counter = Counter(run.findings.values_list("severity", flat=True))
+        run.severity_counts = OrderedDict(
+            [
+                ("LOW", severity_counter.get("LOW", 0)),
+                ("MEDIUM", severity_counter.get("MEDIUM", 0)),
+                ("HIGH", severity_counter.get("HIGH", 0)),
+                ("CRITICAL", severity_counter.get("CRITICAL", 0)),
+            ],
+        )
+
+        # Finalize run
+        run.analyzer_version = get_analyzer_version("semgrep")
+        run.findings_count = run.findings.count()
+        run.completed_at = timezone.now()
+        run.status = Run.Status.COMPLETED
+        run.save(
+            update_fields=[
+                "status",
+                "completed_at",
+                "findings_count",
+                "severity_counts",
+                "analyzer_version",
+            ],
+        )
+
+        return {"results": list(run.findings.values())}
+
+    except Exception as e:
+        run.status = Run.Status.ERRORED
+        run.completed_at = timezone.now()
+        run.save(update_fields=["status", "completed_at"])
+        return {"error": str(e)}
+
+
+def run_vulture_analyzer(run):
+    """
+    Run Vulture static analysis to detect unused code and classify by confidence.
+    """
+    try:
+        file_path = run.submitted_file.file.path
+
+        # Analyze the submitted file using Vulture
+        v = Vulture(verbose=False)
+        v.scavenge([file_path])
+        unused_items = v.get_unused_code()
+
+        # Prepare rule counters for unique rule IDs
+        rule_counters = defaultdict(int)
+
+        # Map Vulture confidence scores to severity.
+        # Confidence values (60, 90, 100) are hardcoded in Vulture’s source logic.
+        # 60 = general unused item, 90 = unused import, 100 = unreachable code.
+        # We widen MEDIUM to include 60–79% for practical balance.
+        # If confidence is missing, default to 50 (safety fallback for unknown cases).
+        def confidence_to_severity(confidence: int | None) -> str:
+            confidence = confidence or 50  # default safety fallback
+            if confidence >= 95:
+                return "CRITICAL"
+            elif confidence >= 80:
+                return "HIGH"
+            elif confidence >= 60:
+                return "MEDIUM"  # broaden range for realism
+            else:
+                return "LOW"
+
+        # Process each unused code element reported by Vulture
+        for item in unused_items:
+            rule_counters[item.typ] += 1
+            severity = confidence_to_severity(getattr(item, "confidence", 50))  # default to trigger a closer look
+            rule_id = f"{item.typ.upper()}-{rule_counters[item.typ]:03d}"
+
+            Finding.objects.get_or_create(
+                run=run,
+                severity=severity,
+                rule_id=rule_id,
+                title=f"Unused {item.typ}",
+                message=f"{item.message or f'Unused {item.typ} named {item.name}'} (confidence {item.confidence}%)",
+                line=item.first_lineno or 0,
+                column=0,
+                reference="https://vulture.readthedocs.io/en/latest/",
+                file_hash=run.submitted_file.sha256,
+                file_name=run.submitted_file.saved_name,
+            )
+
+        # Aggregate severity counts for dashboard summaries
+        severity_counter = Counter(run.findings.values_list("severity", flat=True))
+        run.severity_counts = OrderedDict(
+            [
+                ("LOW", severity_counter.get("LOW", 0)),
+                ("MEDIUM", severity_counter.get("MEDIUM", 0)),
+                ("HIGH", severity_counter.get("HIGH", 0)),
+                ("CRITICAL", severity_counter.get("CRITICAL", 0)),
+            ],
+        )
+
+        # Record analyzer metadata and finalize run
+        run.analyzer_version = get_analyzer_version("vulture")
+        run.findings_count = run.findings.count()
+        run.completed_at = timezone.now()
+        run.status = Run.Status.COMPLETED
+        run.save(
+            update_fields=[
+                "status",
+                "completed_at",
+                "findings_count",
+                "severity_counts",
+                "analyzer_version",
+            ],
+        )
+
+        return {"results": list(run.findings.values())}
+
+    except Exception as e:
+        run.status = Run.Status.ERRORED
         run.completed_at = timezone.now()
         run.save(update_fields=["status", "completed_at"])
         return {"error": str(e)}

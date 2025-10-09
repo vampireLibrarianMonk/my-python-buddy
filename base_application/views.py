@@ -349,6 +349,110 @@ def bandit_status_json(request):
     return JsonResponse(data)
 
 
+@login_required
+def dodgy_status_json(request):
+    files = SubmittedFile.objects.all().order_by("-uploaded_at")
+    data = {}
+
+    for f in files:
+        run = f.runs.filter(analyzer="dodgy").order_by("-started_at").first()
+        if run:
+            # Always return one of the defined status values
+            status = run.status or "PENDING"
+            data[f.sha256] = {
+                "status": status,
+                "findings_count": run.findings_count,
+                "run_id": run.id,
+            }
+        else:
+            # No Run yet --> explicitly "NOT_REQUESTED"
+            data[f.sha256] = {
+                "status": "NOT_REQUESTED",
+                "findings_count": 0,
+                "run_id": None,
+            }
+
+    return JsonResponse(data)
+
+
+@login_required
+def mypy_status_json(request):
+    files = SubmittedFile.objects.all().order_by("-uploaded_at")
+    data = {}
+
+    for f in files:
+        run = f.runs.filter(analyzer="mypy").order_by("-started_at").first()
+        if run:
+            # Always return one of the defined status values
+            status = run.status or "PENDING"
+            data[f.sha256] = {
+                "status": status,
+                "findings_count": run.findings_count,
+                "run_id": run.id,
+            }
+        else:
+            # No Run yet --> explicitly "NOT_REQUESTED"
+            data[f.sha256] = {
+                "status": "NOT_REQUESTED",
+                "findings_count": 0,
+                "run_id": None,
+            }
+
+    return JsonResponse(data)
+
+
+@login_required
+def semgrep_status_json(request):
+    files = SubmittedFile.objects.all().order_by("-uploaded_at")
+    data = {}
+
+    for f in files:
+        run = f.runs.filter(analyzer="semgrep").order_by("-started_at").first()
+        if run:
+            # Always return one of the defined status values
+            status = run.status or "PENDING"
+            data[f.sha256] = {
+                "status": status,
+                "findings_count": run.findings_count,
+                "run_id": run.id,
+            }
+        else:
+            # No Run yet --> explicitly "NOT_REQUESTED"
+            data[f.sha256] = {
+                "status": "NOT_REQUESTED",
+                "findings_count": 0,
+                "run_id": None,
+            }
+
+    return JsonResponse(data)
+
+
+@login_required
+def vulture_status_json(request):
+    files = SubmittedFile.objects.all().order_by("-uploaded_at")
+    data = {}
+
+    for f in files:
+        run = f.runs.filter(analyzer="vulture").order_by("-started_at").first()
+        if run:
+            # Always return one of the defined status values
+            status = run.status or "PENDING"
+            data[f.sha256] = {
+                "status": status,
+                "findings_count": run.findings_count,
+                "run_id": run.id,
+            }
+        else:
+            # No Run yet --> explicitly "NOT_REQUESTED"
+            data[f.sha256] = {
+                "status": "NOT_REQUESTED",
+                "findings_count": 0,
+                "run_id": None,
+            }
+
+    return JsonResponse(data)
+
+
 def run_detail(request, pk):
     run = get_object_or_404(Run, pk=pk)
     submitted_file = run.submitted_file

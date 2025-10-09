@@ -2,7 +2,13 @@
 import os
 from concurrent.futures import ThreadPoolExecutor
 
-from base_application.analyzers import run_bandit_analyzer
+from base_application.analyzers import (
+    run_bandit_analyzer,
+    run_dodgy_analyzer,
+    run_mypy_analyzer,
+    run_semgrep_analyzer,
+    run_vulture_analyzer,
+)
 
 # Django
 from base_application.models import Run
@@ -23,6 +29,14 @@ def run_analyzer_task(run_id, analyzer):
     # Analyzer assignment
     if analyzer == "bandit":
         run_bandit_analyzer(run)
+    elif analyzer == "dodgy":
+        run_dodgy_analyzer(run)
+    elif analyzer == "mypy":
+        run_mypy_analyzer(run)
+    elif analyzer == "semgrep":
+        run_semgrep_analyzer(run)
+    elif analyzer == "vulture":
+        run_vulture_analyzer(run)
     else:
         # Fallback for unknown analyzers
         run.status = "ERRORED"
