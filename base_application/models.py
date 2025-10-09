@@ -63,18 +63,32 @@ class SubmittedFile(models.Model):
 def severity_default():
     return OrderedDict(
         [
+            # Bandit & other analyzers
             ("low", 0),
             ("medium", 0),
             ("high", 0),
+            ("critical", 0),
+            # Semgrep native severities
+            ("info", 0),
+            ("warning", 0),
+            ("error", 0),
         ],
     )
 
 
 def severity_color_map():
     return {
-        "low": {"bg": "#FFEB3B", "fg": "#000000"},  # Bright Yellow, black text
-        "medium": {"bg": "#FF9800", "fg": "#ffffff"},  # Orange, white text
-        "high": {"bg": "#F44336", "fg": "#ffffff"},  # Strong Red, white text
+        # Bandit & other analyzers
+        "low": {"bg": "#FFEB3B", "fg": "#000000"},  # Bright Yellow
+        "medium": {"bg": "#FF9800", "fg": "#ffffff"},  # Orange
+        "high": {"bg": "#F44336", "fg": "#ffffff"},  # Red
+        "critical": {"bg": "#B71C1C", "fg": "#ffffff"},  # Deep Red
+        # Semgrep (MyPy uses warning and error) native severities
+        "info": {"bg": "#42a5f5", "fg": "#ffffff"},  # Light blue info
+        "warning": {"bg": "#FFC107", "fg": "#000000"},  # Amber
+        "error": {"bg": "#D32F2F", "fg": "#ffffff"},  # Deep Red
+        # MyPy
+        "note": {"bg": "#9e9e9e", "fg": "#ffffff"},  # Neutral gray
     }
 
 
