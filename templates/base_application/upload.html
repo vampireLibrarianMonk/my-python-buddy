@@ -5,17 +5,17 @@
 
 {% block content %}
 <style>
-  /* Keep cells on one line so column widths reflect content length */
-  .card.card--wide .table th,
-  .card.card--wide .table td { white-space: nowrap; }
-  /* Hashes and code blocks should never wrap */
-  .card.card--wide .table code { white-space: nowrap; }
+    /* Keep cells on one line so column widths reflect content length */
+    .card.card--wide .table th,
+    .card.card--wide .table td { white-space: nowrap; }
+    /* Hashes and code blocks should never wrap */
+    .card.card--wide .table code { white-space: nowrap; }
 </style>
 
 <h1>Submit a Python file</h1>
 
 <!-- Upload form: Will only accept .py files -->
-<form method="post" enctype="multipart/form-data" class="card card--narrow" novalidate>
+<form class="card card--narrow" enctype="multipart/form-data" method="post" novalidate>
     {% csrf_token %}
     <div class="field">
         <label for="{{ form.file.id_for_label }}">Choose .py file</label>
@@ -25,7 +25,7 @@
         <div class="errors">{{ form.file.errors }}</div>
         {% endif %}
     </div>
-    <button type="submit" class="btn">Upload</button>
+    <button class="btn" type="submit">Upload</button>
 </form>
 
 <!-- List the previous uploads below the form -->
@@ -34,17 +34,17 @@
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2 style="margin:0;">Previous uploads</h2>
         <!-- Enable table length control -->
-        <form method="get" class="inline">
+        <form class="inline" method="get">
             <label for="ps">Rows per page:</label>
-            <input type="number" id="ps" name="ps" value="{{ page_size }}" min="1" max="100" style="width:5rem;">
+            <input id="ps" max="100" min="1" name="ps" style="width:5rem;" type="number" value="{{ page_size }}">
             <button class="btn" type="submit">Apply</button>
         </form>
     </div>
 
     <!-- File table handling if there is content to display-->
     {% if page_obj.object_list %}
-   <div class="tablewrap" style="overflow-x:auto;">
-            <table class="table" style="table-layout:auto; width:max-content; min-width:100%;">
+    <div class="tablewrap" style="overflow-x:auto;">
+        <table class="table" style="table-layout:auto; width:max-content; min-width:100%;">
             <thead>
             <tr>
                 <th>SHA-256 (short)</th>
@@ -53,7 +53,15 @@
                 <th>View File</th>
                 <th>Analyze File</th>
                 <th>Bandit</th>
-                <th>Analysis Results</th>
+                <th>Bandit Results</th>
+                <th>Dodgy</th>
+                <th>Dodgy Results</th>
+                <th>MyPy</th>
+                <th>MyPy Results</th>
+                <th>Semgrep</th>
+                <th>Semgrep Results</th>
+                <th>Vulture</th>
+                <th>Vulture Results</th>
                 <th>Delete</th>
             </tr>
             </thead>
@@ -67,7 +75,7 @@
                     <div class="muted small">stored as: {{ item.saved_name }}</div>
                 </td>
                 <td><code>{{ item.uploaded_at|date:"Y-m-d_H-i-s" }}</code></td>
-                <td><a class="link" href="{{ item.file.url }}" target="_blank" rel="noopener">👁️</a></td>
+                <td><a class="link" href="{{ item.file.url }}" rel="noopener" target="_blank">👁️</a></td>
                 <td>
                     <div style="margin-top:.35rem;">
                         <a class="btn" href="{% url 'analyze_file' item.sha256 %}">🔍</a>
@@ -76,28 +84,28 @@
                 <td>
                     {% with item.runs|get_latest_run:"bandit" as bandit_run %}
                     {% if bandit_run %}
-                    <span id="bandit-badge-{{ item.sha256 }}"
-                          class="badge badge-{{ bandit_run.status|lower }}">
+                    <span class="badge badge-{{ bandit_run.status|lower }}"
+                          id="bandit-badge-{{ item.sha256 }}">
                       {{ bandit_run.status|title }}
                     </span>
                     {% if bandit_run.severity_counts %}
                     <div style="margin-top:0.3rem; font-size:0.8rem;">
                         {% for level, count in bandit_run.severity_counts.items %}
-                          {% if count > 0 %}
-                            {% with sev=level|lower %}
-                              <span class="badge"
-                                    style="background-color: {{ severity_colors|get_item:sev|get_item:'bg' }};
+                        {% if count > 0 %}
+                        {% with sev=level|lower %}
+                        <span class="badge"
+                              style="background-color: {{ severity_colors|get_item:sev|get_item:'bg' }};
                                            color: {{ severity_colors|get_item:sev|get_item:'fg' }};
                                            margin-right: 0.2rem;">
                                 {{ level|title }}: {{ count }}
                               </span>
-                            {% endwith %}
-                          {% endif %}
+                        {% endwith %}
+                        {% endif %}
                         {% endfor %}
                     </div>
                     {% endif %}
                     {% else %}
-                    <span id="bandit-badge-{{ item.sha256 }}" class="badge badge-idle">
+                    <span class="badge badge-idle" id="bandit-badge-{{ item.sha256 }}">
                       Not Requested
                     </span>
                     {% endif %}
@@ -105,29 +113,214 @@
                 </td>
                 <td>
                     {% with item.runs|get_latest_run:"bandit" as bandit_run %}
-                        {% if bandit_run %}
-                            {% if bandit_run.findings_count > 0 %}
-                                <a class="link" href="{% url 'run_detail' bandit_run.id %}" title="View analysis results">👁️</a>
-                            {% elif bandit_run.status == "COMPLETED" %}
-                                <span class="badge badge-success">No Findings</span>
-                            {% else %}
-                                <span class="muted" title="No findings yet">–</span>
-                            {% endif %}
-                        {% else %}
-                            <span class="muted" title="Not analyzed yet">–</span>
-                        {% endif %}
+                    {% if bandit_run %}
+                    {% if bandit_run.findings_count > 0 %}
+                    <a class="link" href="{% url 'run_detail' bandit_run.id %}" title="View Bandit results">👁️</a>
+                    {% elif bandit_run.status == "COMPLETED" %}
+                    <span class="badge badge-success">No Findings</span>
+                    {% else %}
+                    <span class="muted" title="No findings yet">–</span>
+                    {% endif %}
+                    {% else %}
+                    <span class="muted" title="Not analyzed yet">–</span>
+                    {% endif %}
                     {% endwith %}
                 </td>
-            <td>
-                <!-- Deletion method with custom Yes/No modal -->
-                <form method="post"
-                  action="{% url 'delete_file' item.sha256 %}?ps={{ page_size }}&page={{ page_obj.number }}"
-                  class="delete-form"
-                  data-filename="{{ item.original_name }}">
-                {% csrf_token %}
-                <button class="btn" type="submit" title="Delete">🗑️</button>
-            </form>
-            </td>
+                <td>
+                    {% with item.runs|get_latest_run:"dodgy" as dodgy_run %}
+                    {% if dodgy_run %}
+                    <span class="badge badge-{{ dodgy_run.status|lower }}"
+                          id="dodgy-badge-{{ item.sha256 }}">
+                      {{ dodgy_run.status|title }}
+                    </span>
+
+                    {% if dodgy_run.severity_counts %}
+                    <div style="margin-top:0.3rem; font-size:0.8rem;">
+                        {% for level, count in dodgy_run.severity_counts.items %}
+                        {% if count > 0 %}
+                        {% with sev=level|lower %}
+                        <span class="badge"
+                              style="background-color: {{ severity_colors|get_item:sev|get_item:'bg' }};
+                                           color: {{ severity_colors|get_item:sev|get_item:'fg' }};
+                                           margin-right: 0.2rem;">
+                                {{ level|title }}: {{ count }}
+                              </span>
+                        {% endwith %}
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {% else %}
+                    <span class="badge badge-idle" id="dodgy-badge-{{ item.sha256 }}">
+                      Not Requested
+                    </span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                <td>
+                    {% with item.runs|get_latest_run:"dodgy" as dodgy_run %}
+                    {% if dodgy_run %}
+                    {% if dodgy_run.findings_count > 0 %}
+                    <a class="link" href="{% url 'run_detail' dodgy_run.id %}" title="View Dodgy results">👁️</a>
+                    {% elif dodgy_run.status == "COMPLETED" %}
+                    <span class="badge badge-success">No Findings</span>
+                    {% else %}
+                    <span class="muted" title="No findings yet">–</span>
+                    {% endif %}
+                    {% else %}
+                    <span class="muted" title="Not analyzed yet">–</span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                <td>
+                    {% with item.runs|get_latest_run:"mypy" as mypy_run %}
+                    {% if mypy_run %}
+                    <span class="badge badge-{{ mypy_run.status|lower }}"
+                          id="mypy-badge-{{ item.sha256 }}">
+                    {{ mypy_run.status|title }}
+                  </span>
+
+                    {% if mypy_run.severity_counts %}
+                    <div style="margin-top:0.3rem; font-size:0.8rem;">
+                        {% for level, count in mypy_run.severity_counts.items %}
+                        {% if count > 0 %}
+                        {% with sev=level|lower %}
+                        <span class="badge"
+                              style="background-color: {{ severity_colors|get_item:sev|get_item:'bg' }};
+                                 color: {{ severity_colors|get_item:sev|get_item:'fg' }};
+                                 margin-right: 0.2rem;">
+                      {{ level|title }}: {{ count }}
+                    </span>
+                        {% endwith %}
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <span class="badge badge-idle" id="mypy-badge-{{ item.sha256 }}">
+                    Not Requested
+                  </span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                <td>
+                    {% with item.runs|get_latest_run:"mypy" as mypy_run %}
+                    {% if mypy_run %}
+                    {% if mypy_run.findings_count > 0 %}
+                    <a class="link" href="{% url 'run_detail' mypy_run.id %}" title="View Mypy results">👁️</a>
+                    {% elif mypy_run.status == "COMPLETED" %}
+                    <span class="badge badge-success">No Findings</span>
+                    {% else %}
+                    <span class="muted" title="No findings yet">–</span>
+                    {% endif %}
+                    {% else %}
+                    <span class="muted" title="Not analyzed yet">–</span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                <td>
+                    {% with item.runs|get_latest_run:"semgrep" as semgrep_run %}
+                    {% if semgrep_run %}
+                    <span class="badge badge-{{ semgrep_run.status|lower }}"
+                          id="semgrep-badge-{{ item.sha256 }}">
+                      {{ semgrep_run.status|title }}
+                    </span>
+
+                    {% if semgrep_run.severity_counts %}
+                    <div style="margin-top:0.3rem; font-size:0.8rem;">
+                        {% for level, count in semgrep_run.severity_counts.items %}
+                        {% if count > 0 %}
+                        {% with sev=level|lower %}
+                        <span class="badge"
+                              style="background-color: {{ severity_colors|get_item:sev|get_item:'bg' }};
+                                   color: {{ severity_colors|get_item:sev|get_item:'fg' }};
+                                   margin-right: 0.2rem;">
+                        {{ level|title }}: {{ count }}
+                      </span>
+                        {% endwith %}
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <span class="badge badge-idle" id="semgrep-badge-{{ item.sha256 }}">
+                      Not Requested
+                    </span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                <td>
+                    {% with item.runs|get_latest_run:"semgrep" as semgrep_run %}
+                    {% if semgrep_run %}
+                    {% if semgrep_run.findings_count > 0 %}
+                    <a class="link" href="{% url 'run_detail' semgrep_run.id %}" title="View Semgrep results">👁️</a>
+                    {% elif semgrep_run.status == "COMPLETED" %}
+                    <span class="badge badge-success">No Findings</span>
+                    {% else %}
+                    <span class="muted" title="No findings yet">–</span>
+                    {% endif %}
+                    {% else %}
+                    <span class="muted" title="Not analyzed yet">–</span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                <td>
+                    {% with item.runs|get_latest_run:"vulture" as vulture_run %}
+                    {% if vulture_run %}
+                    <span class="badge badge-{{ vulture_run.status|lower }}"
+                          id="vulture-badge-{{ item.sha256 }}">
+                    {{ vulture_run.status|title }}
+                  </span>
+
+                    {% if vulture_run.severity_counts %}
+                    <div style="margin-top:0.3rem; font-size:0.8rem;">
+                        {% for level, count in vulture_run.severity_counts.items %}
+                        {% if count > 0 %}
+                        {% with sev=level|lower %}
+                        <span class="badge"
+                              style="background-color: {{ severity_colors|get_item:sev|get_item:'bg' }};
+                                 color: {{ severity_colors|get_item:sev|get_item:'fg' }};
+                                 margin-right: 0.2rem;">
+                      {{ level|title }}: {{ count }}
+                    </span>
+                        {% endwith %}
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <span class="badge badge-idle" id="vulture-badge-{{ item.sha256 }}">
+                    Not Requested
+                  </span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                <td>
+                    {% with item.runs|get_latest_run:"vulture" as vulture_run %}
+                    {% if vulture_run %}
+                    {% if vulture_run.findings_count > 0 %}
+                    <a class="link" href="{% url 'run_detail' vulture_run.id %}" title="View Vulture results">👁️</a>
+                    {% elif vulture_run.status == "COMPLETED" %}
+                    <span class="badge badge-success">No Findings</span>
+                    {% else %}
+                    <span class="muted" title="No findings yet">–</span>
+                    {% endif %}
+                    {% else %}
+                    <span class="muted" title="Not analyzed yet">–</span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                <td>
+                    <!-- Deletion method with custom Yes/No modal -->
+                    <form action="{% url 'delete_file' item.sha256 %}?ps={{ page_size }}&page={{ page_obj.number }}"
+                          class="delete-form"
+                          data-filename="{{ item.original_name }}"
+                          method="post">
+                        {% csrf_token %}
+                        <button class="btn" title="Delete" type="submit">🗑️</button>
+                    </form>
+                </td>
             </tr>
             {% endfor %}
             </tbody>
@@ -158,13 +351,181 @@
 
 <!-- Bandit Status Reflection-->
 <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      function updateBanditBadges() {
+        fetch("{% url 'bandit_status_json' %}")
+          .then(response => response.json())
+          .then(data => {
+            for (const [sha256, info] of Object.entries(data)) {
+              const badgeEl = document.querySelector(`#bandit-badge-${sha256}`);
+              if (badgeEl) {
+                let status = info.status;
+                let text = "";
+                let badgeClass = "badge";
+
+                switch (status) {
+                  case "NOT_REQUESTED":
+                    text = "Not Requested"; badgeClass += " badge-idle"; break;
+                  case "REQUESTED":
+                    text = "Requested"; badgeClass += " badge-info"; break;
+                  case "PENDING":
+                    text = "Pending"; badgeClass += " badge-warn"; break;
+                  case "COMPLETED":
+                    text = "Completed"; badgeClass += " badge-success"; break;
+                  case "ERRORED":
+                    text = "Errored"; badgeClass += " badge-failed"; break;
+                  default:
+                    text = status; badgeClass += " badge-idle"; // fallback
+                }
+
+                badgeEl.textContent = text;
+                badgeEl.className = badgeClass;
+              }
+            }
+          })
+          .catch(err => console.error("Bandit polling error:", err));
+      }
+
+      setInterval(updateBanditBadges, 3000);
+      updateBanditBadges();
+    });
+</script>
+
+<!-- Dodgy Status Reflection-->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+      function updateDodgyBadges() {
+        fetch("{% url 'dodgy_status_json' %}")
+          .then(response => response.json())
+          .then(data => {
+            for (const [sha256, info] of Object.entries(data)) {
+              const badgeEl = document.querySelector(`#dodgy-badge-${sha256}`);
+              if (badgeEl) {
+                let status = info.status;
+                let text = "";
+                let badgeClass = "badge";
+
+                switch (status) {
+                  case "NOT_REQUESTED":
+                    text = "Not Requested"; badgeClass += " badge-idle"; break;
+                  case "REQUESTED":
+                    text = "Requested"; badgeClass += " badge-info"; break;
+                  case "PENDING":
+                    text = "Pending"; badgeClass += " badge-warn"; break;
+                  case "COMPLETED":
+                    text = "Completed"; badgeClass += " badge-success"; break;
+                  case "ERRORED":
+                    text = "Errored"; badgeClass += " badge-failed"; break;
+                  default:
+                    text = status; badgeClass += " badge-idle"; // fallback
+                }
+
+                badgeEl.textContent = text;
+                badgeEl.className = badgeClass;
+              }
+            }
+          })
+          .catch(err => console.error("Dodgy polling error:", err));
+      }
+
+      setInterval(updateDodgyBadges, 3000);
+      updateDodgyBadges();
+    });
+</script>
+
+<!-- Mypy Status Reflection-->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+      function updateMypyBadges() {
+        fetch("{% url 'mypy_status_json' %}")
+          .then(response => response.json())
+          .then(data => {
+            for (const [sha256, info] of Object.entries(data)) {
+              const badgeEl = document.querySelector(`#mypy-badge-${sha256}`);
+              if (badgeEl) {
+                let status = info.status;
+                let text = "";
+                let badgeClass = "badge";
+
+                switch (status) {
+                  case "NOT_REQUESTED":
+                    text = "Not Requested"; badgeClass += " badge-idle"; break;
+                  case "REQUESTED":
+                    text = "Requested"; badgeClass += " badge-info"; break;
+                  case "PENDING":
+                    text = "Pending"; badgeClass += " badge-warn"; break;
+                  case "COMPLETED":
+                    text = "Completed"; badgeClass += " badge-success"; break;
+                  case "ERRORED":
+                    text = "Errored"; badgeClass += " badge-failed"; break;
+                  default:
+                    text = status; badgeClass += " badge-idle";
+                }
+
+                badgeEl.textContent = text;
+                badgeEl.className = badgeClass;
+              }
+            }
+          })
+          .catch(err => console.error("Mypy polling error:", err));
+      }
+
+      setInterval(updateMypyBadges, 3000);
+      updateMypyBadges();
+    });
+</script>
+
+<!-- Semgrep Status Reflection-->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+      function updateSemgrepBadges() {
+        fetch("{% url 'semgrep_status_json' %}")
+          .then(response => response.json())
+          .then(data => {
+            for (const [sha256, info] of Object.entries(data)) {
+              const badgeEl = document.querySelector(`#semgrep-badge-${sha256}`);
+              if (badgeEl) {
+                let status = info.status;
+                let text = "";
+                let badgeClass = "badge";
+
+                switch (status) {
+                  case "NOT_REQUESTED":
+                    text = "Not Requested"; badgeClass += " badge-idle"; break;
+                  case "REQUESTED":
+                    text = "Requested"; badgeClass += " badge-info"; break;
+                  case "PENDING":
+                    text = "Pending"; badgeClass += " badge-warn"; break;
+                  case "COMPLETED":
+                    text = "Completed"; badgeClass += " badge-success"; break;
+                  case "ERRORED":
+                    text = "Errored"; badgeClass += " badge-failed"; break;
+                  default:
+                    text = status; badgeClass += " badge-idle"; // fallback
+                }
+
+                badgeEl.textContent = text;
+                badgeEl.className = badgeClass;
+              }
+            }
+          })
+          .catch(err => console.error("Semgrep polling error:", err));
+      }
+
+      setInterval(updateSemgrepBadges, 3000);
+      updateSemgrepBadges();
+    });
+</script>
+
+<!-- Vulture Status Reflection -->
+<script>
   document.addEventListener("DOMContentLoaded", function () {
-    function updateBadges() {
-      fetch("{% url 'bandit_status_json' %}")
+    function updateVultureBadges() {
+      fetch("{% url 'vulture_status_json' %}")
         .then(response => response.json())
         .then(data => {
           for (const [sha256, info] of Object.entries(data)) {
-            const badgeEl = document.querySelector(`#bandit-badge-${sha256}`);
+            const badgeEl = document.querySelector(`#vulture-badge-${sha256}`);
             if (badgeEl) {
               let status = info.status;
               let text = "";
@@ -182,7 +543,7 @@
                 case "ERRORED":
                   text = "Errored"; badgeClass += " badge-failed"; break;
                 default:
-                  text = status; badgeClass += " badge-idle"; // fallback
+                  text = status; badgeClass += " badge-idle";
               }
 
               badgeEl.textContent = text;
@@ -190,95 +551,95 @@
             }
           }
         })
-        .catch(err => console.error("Polling error:", err));
+        .catch(err => console.error("Vulture polling error:", err));
     }
 
-    // Keep polling forever every 3s, regardless of state
-    setInterval(updateBadges, 3000);
-    updateBadges();  // Initial run
+    setInterval(updateVultureBadges, 3000);
+    updateVultureBadges();
   });
 </script>
 
 <!-- Modal styles: shared by reanalyze + delete -->
 <style>
-  .modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0; top: 0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5);
-  }
-  .modal-content {
-    background: #fff;
-    color: #000;
-    margin: 15% auto;
-    padding: 1.5rem;
-    border-radius: 8px;
-    width: 400px;
-    max-width: 90%;
-    text-align: center;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-  }
-  .modal-content p { margin-bottom: 1rem; }
-  .modal-content .btn { margin: 0 0.5rem; }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+    }
+    .modal-content {
+      background: #fff;
+      color: #000;
+      margin: 15% auto;
+      padding: 1.5rem;
+      border-radius: 8px;
+      width: 400px;
+      max-width: 90%;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    .modal-content p { margin-bottom: 1rem; }
+    .modal-content .btn { margin: 0 0.5rem; }
 </style>
 
 <!-- Duplicate file modal -->
 {% if duplicate_file %}
-<div id="reanalyzeModal" class="modal">
-  <div class="modal-content">
-    <p>This file '<strong>{{ duplicate_file.saved_name }}</strong>' already exists.<br>Do you want to reanalyze it?</p>
-    <button id="reanalyzeYesBtn" class="btn btn-warn">Yes</button>
-    <button id="reanalyzeNoBtn" class="btn">No</button>
-  </div>
+<div class="modal" id="reanalyzeModal">
+    <div class="modal-content">
+        <p>This file '<strong>{{ duplicate_file.saved_name }}</strong>' already exists.<br>Do you want to reanalyze it?
+        </p>
+        <button class="btn btn-warn" id="reanalyzeYesBtn">Yes</button>
+        <button class="btn" id="reanalyzeNoBtn">No</button>
+    </div>
 </div>
 {% endif %}
 
 <!-- Delete confirmation modal (always available) -->
-<div id="deleteModal" class="modal">
-  <div class="modal-content">
-    <p>Delete '<strong id="deleteFileName"></strong>'?<br>This cannot be undone.</p>
-    <button id="deleteYesBtn" class="btn btn-warn">Yes</button>
-    <button id="deleteNoBtn" class="btn">No</button>
-  </div>
+<div class="modal" id="deleteModal">
+    <div class="modal-content">
+        <p>Delete '<strong id="deleteFileName"></strong>'?<br>This cannot be undone.</p>
+        <button class="btn btn-warn" id="deleteYesBtn">Yes</button>
+        <button class="btn" id="deleteNoBtn">No</button>
+    </div>
 </div>
 
 <!--/* Duplicate File Model-->
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    {% if duplicate_file %}
-    const reModal = document.getElementById("reanalyzeModal");
-    reModal.style.display = "block";
+    document.addEventListener("DOMContentLoaded", function () {
+      {% if duplicate_file %}
+      const reModal = document.getElementById("reanalyzeModal");
+      reModal.style.display = "block";
 
-    document.getElementById("reanalyzeYesBtn").onclick = function() {
-      window.location.href = "{% url 'analyze_file' duplicate_file.sha256 %}";
-    };
-    document.getElementById("reanalyzeNoBtn").onclick = function() {
-      reModal.style.display = "none";
-    };
-    {% endif %}
+      document.getElementById("reanalyzeYesBtn").onclick = function() {
+        window.location.href = "{% url 'analyze_file' duplicate_file.sha256 %}";
+      };
+      document.getElementById("reanalyzeNoBtn").onclick = function() {
+        reModal.style.display = "none";
+      };
+      {% endif %}
 
-    /* ===== Delete modal ===== */
-    const delModal = document.getElementById("deleteModal");
-    const delFileName = document.getElementById("deleteFileName");
-    let activeForm = null;
+      /* ===== Delete modal ===== */
+      const delModal = document.getElementById("deleteModal");
+      const delFileName = document.getElementById("deleteFileName");
+      let activeForm = null;
 
-    document.querySelectorAll("form.delete-form").forEach(form => {
-      form.addEventListener("submit", function (e) {
-        e.preventDefault();
-        activeForm = this;
-        delFileName.textContent = this.dataset.filename;
-        delModal.style.display = "block";
+      document.querySelectorAll("form.delete-form").forEach(form => {
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          activeForm = this;
+          delFileName.textContent = this.dataset.filename;
+          delModal.style.display = "block";
+        });
       });
-    });
 
-    document.getElementById("deleteYesBtn").onclick = function() {
-      if (activeForm) activeForm.submit();
-    };
-    document.getElementById("deleteNoBtn").onclick = function() {
-      delModal.style.display = "none";
-    };
-  });
+      document.getElementById("deleteYesBtn").onclick = function() {
+        if (activeForm) activeForm.submit();
+      };
+      document.getElementById("deleteNoBtn").onclick = function() {
+        delModal.style.display = "none";
+      };
+    });
 </script>
 {% endblock %}

@@ -61,57 +61,54 @@
       const table = document.getElementById("findingsTable");
       const headers = table.querySelectorAll("th[data-sort]");
 
-      // Click-to-sort logic (just reverse)
+      // Enhanced click-to-sort logic for all columns
+      // Ensure you keep the severity sorting update to date from base_application/models.py
       headers.forEach((th) => {
         let asc = true;
         th.style.cursor = "pointer";
         th.addEventListener("click", () => {
+          const sortKey = th.dataset.sort;
           const rows = Array.from(table.tBodies[0].rows);
 
-          // Simply reverse the current order instead of recalculating
-          if (!asc) {
-            rows.reverse();
-          }
+          rows.sort((a, b) => {
+            const getVal = (row) => {
+              switch (sortKey) {
+                case "severity":
+                  // Custom severity order
+                  const order = ["critical", "high", "medium", "low", "info", "warning", "note", "dodgy"];
+                  return order.indexOf(row.dataset.severity || "") || 99;
+                case "rule":
+                  return row.cells[1].innerText.trim().toLowerCase();
+                case "message":
+                  return row.cells[2].innerText.trim().toLowerCase();
+                case "line":
+                  return parseInt(row.cells[3].innerText.trim() || "0", 10);
+                case "column":
+                  return parseInt(row.cells[4].innerText.trim() || "0", 10);
+                default:
+                  return "";
+              }
+            };
 
-          rows.forEach(row => table.tBodies[0].appendChild(row));
+            const aVal = getVal(a);
+            const bVal = getVal(b);
+
+            if (typeof aVal === "number" && typeof bVal === "number") {
+              return asc ? aVal - bVal : bVal - aVal;
+            }
+            return asc
+              ? aVal.localeCompare(bVal)
+              : bVal.localeCompare(aVal);
+          });
+
+          rows.forEach((row) => table.tBodies[0].appendChild(row));
           asc = !asc;
         });
       });
     })();
 </script>
 
-
 <h2>Source Code</h2>
-<style>
-    /* IDE look & feel */
-    .code-viewer {
-      border: 1px solid #444; background:#1e1e1e; color:#f5f5f5;
-      font-family: monospace; overflow-x: auto; border-radius: 6px;
-      outline: none;
-    }
-    .code-table { border-collapse: collapse; width: 100%; font-size: 14px; line-height: 1.4; table-layout: fixed; }
-    .code-row { transition: background-color 0.15s; }
-    .code-row:nth-child(odd)  { background-color: #1e1e1e; }
-    .code-row:nth-child(even) { background-color: #252526; }
-    .code-row.line-highlight td { background-color: #333a45 !important; }
-    .gutter {
-      text-align: right; padding: 0 .75rem; color:#888; user-select:none; white-space:nowrap;
-      border-right: 1px solid #333; width: 1%;
-    }
-    .code-cell {
-      position: relative; padding: 0 .75rem; white-space: pre; font-family: monospace;
-      --pad-left: .75rem;  /* used in column marker calc */
-    }
-    /* Thin vertical column highlight (1ch wide), positioned via --col */
-    .col-highlight {
-      position: absolute; top: 0; bottom: 0; width: 1ch; background: #ffd54a66;
-      left: calc((var(--col, 1) - 1) * 1ch + var(--pad-left));
-      pointer-events: none;
-    }
-    /* Hover line effect like Visual Studio Code */
-    .code-viewer table tbody tr:hover { background-color: #333a45 !important; }
-</style>
-
 <div class="code-viewer" id="codeViewer" tabindex="-1">
     <table class="code-table">
         <tbody>
