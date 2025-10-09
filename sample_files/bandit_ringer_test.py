@@ -1,6 +1,3 @@
-# https://bandit.readthedocs.io/en/latest/plugins/index.html#complete-test-plugin-listing
-
-
 # MEDIUM severity: exec usage --> B102
 def run_code(code):
     exec(code)

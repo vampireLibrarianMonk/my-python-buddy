@@ -4,7 +4,7 @@ default_language_version:
 exclude: (?x)^(
   /
   (
-    sample-files|
+    sample_files|
     \.venv
   )/
   )
@@ -101,6 +101,7 @@ repos:
       - id: detect-aws-credentials
         args: [--allow-missing-credentials]
       - id: detect-private-key
+        exclude: sample_files/
       - id: fix-byte-order-marker
       - id: mixed-line-ending
         args: [--fix=lf]
@@ -153,6 +154,7 @@ repos:
     rev: v1.5.0
     hooks:
       - id: detect-secrets
+        exclude: sample_files/
 
   # flake8:
   # Python linter enforcing style and catching issues.
@@ -167,3 +169,4 @@ repos:
       - id: flake8
         entry: pflake8
         additional_dependencies: [pyproject-flake8]
+        exclude: sample_files/
