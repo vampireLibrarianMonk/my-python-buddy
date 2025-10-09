@@ -67,7 +67,7 @@ repos:
         name: isort (python)
 
   # prettier:
-  # Formats YAML, JSON, and Markdown files using Prettier.
+  # Formats YAML, JSON and Markdown files using Prettier.
   # Config file: .prettierrc or prettier.config.js
   # Example:
   # {

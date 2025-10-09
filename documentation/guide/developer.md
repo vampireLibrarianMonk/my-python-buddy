@@ -6,7 +6,7 @@ This project for the current branch `base-scaffolding` is a minimal example temp
 
 ## Intended Audience
 
-This guide is intended for developers who are configuring, extending, or maintaining the project. It provides implementation details, environment setup, configuration guidance, and testing instructions.
+This guide is intended for developers who are configuring, extending, or maintaining the project. It provides implementation details, environment setup, configuration guidance and testing instructions.
 
 ---
 
