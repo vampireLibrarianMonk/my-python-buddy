@@ -180,34 +180,70 @@ input[type="file"] { padding: .5rem 0; }
 .badge-failed { background: #f44336; color: white; }
 .badge-success { background: #4CAF50; color: white; }
 
+/* IDE look & feel */
+.code-viewer {
+  border: 1px solid #444; background:#1e1e1e; color:#f5f5f5;
+  font-family: monospace; overflow-x: auto; border-radius: 6px;
+  outline: none;
+}
+
+/* Compact single-line code rows */
 .code-table {
   border-collapse: collapse;
+  border-spacing: 0;        /* removes implicit cell gap */
   width: 100%;
-  font-size: 13px;
-  line-height: 1.3;        /* tighter, matches monospace better */
-  font-family: monospace;
+  font-size: 14px;
+  line-height: 1em;         /* matches text height */
   table-layout: fixed;
 }
+
+.code-row {
+  transition: background-color 0.15s;
+  height: 1em;              /* exact character line height */
+}
+
+.code-row td {
+  padding: 0;               /* remove default table cell padding */
+  margin: 0;
+  vertical-align: middle;   /* centers text exactly on baseline */
+}
+
 .code-row:nth-child(odd)  { background-color: #1e1e1e; }
 .code-row:nth-child(even) { background-color: #252526; }
+.code-row.line-highlight td { background-color: #333a45 !important; }
+
 .gutter {
   text-align: right;
-  padding: 0 .5rem;
-  color: #888;
-  user-select: none;
-  white-space: nowrap;
+  padding: 0 .4rem;          /* reduced horizontal padding */
+  color:#888;
+  user-select:none;
+  white-space:nowrap;
   border-right: 1px solid #333;
   width: 1%;
-  vertical-align: top;     /* aligns with code cell */
 }
+
 .code-cell {
   position: relative;
-  padding: 0 .75rem;
-  white-space: pre;        /* preserve indentation */
+  padding: 0 .4rem;          /* reduced vertical padding */
+  white-space: pre;
   font-family: monospace;
-  vertical-align: top;
-  --pad-left: .75rem;
+  --pad-left: .4rem;         /* sync with padding */
+  line-height: 1em;
 }
+
+/* Thin vertical column highlight (1ch wide), positioned via --col */
+.col-highlight {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 1ch;
+  background: #ffd54a66;
+  left: calc((var(--col, 1) - 1) * 1ch + var(--pad-left));
+  pointer-events: none;
+}
+
+/* Hover line effect like Visual Studio Code */
+.code-viewer table tbody tr:hover { background-color: #333a45 !important; }
+
 /* Thin vertical column highlight (1ch wide), positioned via --col */
 .col-highlight {
   position: absolute; top: 0; bottom: 0; width: 1ch;
