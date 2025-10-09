@@ -29,17 +29,11 @@ class UploadPyForm(forms.Form):
 
 class AnalyzerSelectForm(forms.Form):
     ANALYZER_CHOICES = [
-        # Common security issue finder
-        ("bandit", "Bandit (security) – https://bandit.readthedocs.io/"),
-        # Broad-based analysis tools to cover down on what Bandit might miss and has a broad range of community rules
-        # to pull from
-        ("semgrep", "Semgrep (pattern matcher (community rules) – https://semgrep.dev/"),
-        # Early type checker
-        ("mypy", "MyPy (type checker) – https://mypy.readthedocs.io/"),
-        # Dead code finder
-        ("vulture", "Vulture (dead code) – https://github.com/jendrikseipp/vulture"),
-        # For credentials
-        ("dodgy", "Dodgy (secrets/bad patterns) – https://github.com/landscapeio/dodgy"),
+        ("bandit", "Bandit – Python security scanner"),
+        ("dodgy", "Dodgy – secrets and patterns"),
+        ("mypy", "MyPy – type checker"),
+        ("semgrep", "Semgrep – pattern matcher"),
+        ("vulture", "Vulture – dead code finder"),
     ]
 
     file_name = forms.CharField(widget=forms.HiddenInput())
