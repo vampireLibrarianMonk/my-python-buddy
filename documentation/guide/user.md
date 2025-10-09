@@ -36,18 +36,40 @@ Upon upload, the system either confirms success...
 
 ## Post Login Stage 6: User is prompted to select from a list of analyzers
 
-The user is presented the available analyzers, allowing the user to select the ones they want to run the code analysis. The user will then select `Run analysis`.
+The user is presented the available analyzers, allowing the user to select the ones they want to run the code analysis. The user will then select `Analyze`.
 
 ![Analyzer Choice](documentation/supporting_images/01-05-post-login-3.png)
 
 ## Post Login Stage 7: Template Analyze Code Page (selected only Bandit for brevity)
 
-The use is presented with the Analysis (currently templated) page that shows side-by-side the code with numbered lines and the part that will display the security findings and LLM recommendations.
+User is redirected back to the `Upload` page with a filled out table with file metadata, options to view, re-analyze and view each analyzer status and results. User is asked to refresh the page once scans are completed until `Django Channels` are implemented
 
-![Analysis Page](documentation/supporting_images/01-05-post-login-4.png)
+![Analysis Page](documentation/supporting_images/01-05-post-login-4_1.png)
 
-## Post Login Stage 8: Revisit submission page where previous submission is visible
+![Analysis Page](documentation/supporting_images/01-05-post-login-4_2.png)
 
-Upon selection of the `Upload` in the upper right hand menu the user is returned to the submission page that has a table displaying the last submission as a row with future functionality being that analysis can be re-run or even deleted..
+## Post Login Stage 8: Table expansion
 
-![Upload Screen Table](documentation/supporting_images/01-05-post-login-5.png)
+Another file upload and selection of analyzers and `Analzye` will result in a table expansion of the next file.
+
+![Analysis Page](documentation/supporting_images/01-05-post-login-4_2.png)
+
+## Post Login Stage 9: Viewing an Analysis Page
+
+Selecting `👁️` from the respective analyzer's results column will result in a redirect to the Analysis Results Page. Of which there are three sections:
+
+- File and Analyzer Metadata
+- Findings Table
+- Source Code
+
+Each selection of a findings row will result in the directing of the user to that specific code line and column color coded by that respective severity color.
+
+![Analysis Page](documentation/supporting_images/01-07-post-login-5-analysis_1.png)
+![Analysis Page](documentation/supporting_images/01-07-post-login-5-analysis_2.png)
+![Analysis Page](documentation/supporting_images/01-07-post-login-5-analysis_3.png)
+
+# Post Login Stage 10: Viewing of Uploaded File
+
+Selecting `👁️` in the View File column will result in the new page consisting of the uploaded file in case the user wants to download it.
+
+![Analysis Page](documentation/supporting_images/09-01-view-download.png)
