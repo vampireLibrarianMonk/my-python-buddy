@@ -230,6 +230,8 @@ class UploadViewTests(TestCase):
         # Manually save a file without a SubmittedFile record
         file_name = "manual.py"
         saved_path = os.path.join(TEMP_MEDIA, "uploads", file_name)
+        upload_dir = os.path.join(TEMP_MEDIA, "uploads")
+        os.makedirs(upload_dir, exist_ok=True)
         with open(saved_path, "wb") as f:
             f.write(b"print('no db record')")
 
