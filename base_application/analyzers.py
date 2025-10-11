@@ -188,8 +188,8 @@ def run_mypy_analyzer(run):
             run.save(update_fields=["status", "completed_at"])
             return {"error": stderr}
 
-        # Skip "no issues" message
-        if "Success: no issues found" in stdout:
+        # No issues signaled with a blank stdout
+        if stdout == "":
             run.status = Run.Status.COMPLETED
             run.completed_at = timezone.now()
             run.findings_count = 0

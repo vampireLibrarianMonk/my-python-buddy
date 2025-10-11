@@ -273,7 +273,6 @@ def analyze_file_view(request, sha256: str):
         return redirect("analyze_file", sha256=obj.sha256)
 
     selected = list(form.cleaned_data["analyzers"])
-    # llm_text = (form.cleaned_data.get("llm_notes") or "").strip()
 
     # Preserve user interface order
     choice_order = [key for key, _label in AnalyzerSelectForm.ANALYZER_CHOICES]
