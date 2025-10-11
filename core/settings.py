@@ -81,6 +81,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'base_application',
 ]
 
@@ -172,3 +173,19 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Django Channels Redis
+ASGI_APPLICATION = "core.asgi.application"
+# Development
+# core/settings.py
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
+
+# Production
+# CHANNEL_LAYERS = {
+#     "default": {"BACKEND": "channels_redis.core.RedisChannelLayer",
+#                 "CONFIG": {"hosts": [("127.0.0.1", 6379)]}}
+# }

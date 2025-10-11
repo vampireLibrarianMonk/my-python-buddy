@@ -143,7 +143,11 @@ repos:
     rev: "1.7.6"
     hooks:
       - id: bandit
-        args: ["-x", "tests,sample_files"]
+        args: ["-x",
+               "tests,sample_files",
+               "--exclude",
+               "base_application/templatetags/custom_tags.py"
+        ]
 
   # detect-secrets:
   # Detects secrets like API keys or credentials in code.

@@ -21,7 +21,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.views.decorators.http import require_http_methods
 
-# Models
+# Models and Associated Methods
 from base_application.models import Run, severity_color_map
 
 # Tasking

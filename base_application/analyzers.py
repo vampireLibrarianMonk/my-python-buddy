@@ -6,12 +6,18 @@ from collections import Counter, OrderedDict, defaultdict
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as get_version
 
+# Channels
+from asgiref.sync import async_to_sync
+
 # Analyzers
 # Bandit
 from bandit.core.config import BanditConfig
 from bandit.core.manager import BanditManager
+from channels.layers import get_channel_layer
+from django.db import transaction
 
 # Django
+from django.urls import reverse
 from django.utils import timezone
 
 # Dodgy
@@ -102,7 +108,29 @@ def run_bandit_analyzer(run):
             ],
         )
 
-        return {"results": list(run.findings.values())}
+        # Get the active Django Channels layer
+        channel_layer = get_channel_layer()
+
+        # Update run status and save it before notifying the frontend
+        run.status = Run.Status.COMPLETED
+        run.save()
+
+        # Send WebSocket update after database commit completes
+        transaction.on_commit(
+            lambda: async_to_sync(channel_layer.group_send)(
+                f"analyzer_{run.submitted_file.sha256}",
+                {
+                    "type": "send_update",
+                    "data": {
+                        "analyzer": run.analyzer,
+                        "status": run.status,
+                        "severity_counts": run.severity_counts,
+                        "findings_count": run.findings_count,
+                        "run_url": reverse("run_detail", args=[run.id]),
+                    },
+                },
+            ),
+        )
 
     except Exception as e:
         run.status = "ERRORED"
@@ -153,7 +181,30 @@ def run_dodgy_analyzer(run):
                 "analyzer_version",
             ],
         )
-        return {"results": list(run.findings.values())}
+
+        # Get the active Django Channels layer
+        channel_layer = get_channel_layer()
+
+        # Update run status and save it before notifying the frontend
+        run.status = Run.Status.COMPLETED
+        run.save()
+
+        # Send WebSocket update after database commit completes
+        transaction.on_commit(
+            lambda: async_to_sync(channel_layer.group_send)(
+                f"analyzer_{run.submitted_file.sha256}",
+                {
+                    "type": "send_update",
+                    "data": {
+                        "analyzer": run.analyzer,
+                        "status": run.status,
+                        "severity_counts": run.severity_counts,
+                        "findings_count": run.findings_count,
+                        "run_url": reverse("run_detail", args=[run.id]),
+                    },
+                },
+            ),
+        )
 
     except Exception as e:
         run.status = Run.Status.ERRORED
@@ -289,7 +340,29 @@ def run_mypy_analyzer(run):
             ],
         )
 
-        return {"results": list(run.findings.values())}
+        # Get the active Django Channels layer
+        channel_layer = get_channel_layer()
+
+        # Update run status and save it before notifying the frontend
+        run.status = Run.Status.COMPLETED
+        run.save()
+
+        # Send WebSocket update after database commit completes
+        transaction.on_commit(
+            lambda: async_to_sync(channel_layer.group_send)(
+                f"analyzer_{run.submitted_file.sha256}",
+                {
+                    "type": "send_update",
+                    "data": {
+                        "analyzer": run.analyzer,
+                        "status": run.status,
+                        "severity_counts": run.severity_counts,
+                        "findings_count": run.findings_count,
+                        "run_url": reverse("run_detail", args=[run.id]),
+                    },
+                },
+            ),
+        )
 
     except Exception as e:
         run.status = Run.Status.ERRORED
@@ -415,7 +488,29 @@ def run_semgrep_analyzer(run):
             ],
         )
 
-        return {"results": list(run.findings.values())}
+        # Get the active Django Channels layer
+        channel_layer = get_channel_layer()
+
+        # Update run status and save it before notifying the frontend
+        run.status = Run.Status.COMPLETED
+        run.save()
+
+        # Send WebSocket update after database commit completes
+        transaction.on_commit(
+            lambda: async_to_sync(channel_layer.group_send)(
+                f"analyzer_{run.submitted_file.sha256}",
+                {
+                    "type": "send_update",
+                    "data": {
+                        "analyzer": run.analyzer,
+                        "status": run.status,
+                        "severity_counts": run.severity_counts,
+                        "findings_count": run.findings_count,
+                        "run_url": reverse("run_detail", args=[run.id]),
+                    },
+                },
+            ),
+        )
 
     except Exception as e:
         run.status = Run.Status.ERRORED
@@ -500,7 +595,29 @@ def run_vulture_analyzer(run):
             ],
         )
 
-        return {"results": list(run.findings.values())}
+        # Get the active Django Channels layer
+        channel_layer = get_channel_layer()
+
+        # Update run status and save it before notifying the frontend
+        run.status = Run.Status.COMPLETED
+        run.save()
+
+        # Send WebSocket update after database commit completes
+        transaction.on_commit(
+            lambda: async_to_sync(channel_layer.group_send)(
+                f"analyzer_{run.submitted_file.sha256}",
+                {
+                    "type": "send_update",
+                    "data": {
+                        "analyzer": run.analyzer,
+                        "status": run.status,
+                        "severity_counts": run.severity_counts,
+                        "findings_count": run.findings_count,
+                        "run_url": reverse("run_detail", args=[run.id]),
+                    },
+                },
+            ),
+        )
 
     except Exception as e:
         run.status = Run.Status.ERRORED

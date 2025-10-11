@@ -20,7 +20,6 @@ class UploadPyForm(forms.Form):
         ctype = (getattr(f, "content_type", None) or "").lower()
         if ctype and ctype not in ALLOWED_CTYPES:
             raise forms.ValidationError("Unexpected file type; please upload a .py file.")
-        # Optional size guard (e.g., 1 MB)
         # Size review at a later time TODO
         if f.size > 1_000_000:
             raise forms.ValidationError("File too large (max 1 MB).")
