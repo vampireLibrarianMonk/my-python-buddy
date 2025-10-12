@@ -8,6 +8,7 @@ on:
       - "base_application/tests/**"
       - "core/**"
       - "environment.yml"
+      - "templates/**"
   workflow_dispatch:
 
 permissions:
