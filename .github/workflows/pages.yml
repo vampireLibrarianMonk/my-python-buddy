@@ -4,7 +4,10 @@ on:
   push:
     branches: [base-scaffolding, analyzer-scaffolding]
     paths:
+      - ".github/workflows/pages.yml"
       - "base_application/tests/**"
+      - "core/**"
+      - "environment.yml"
   workflow_dispatch:
 
 permissions:
