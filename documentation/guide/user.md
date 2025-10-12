@@ -42,7 +42,7 @@ The user is presented the available analyzers, allowing the user to select the o
 
 ## Post Login Stage 4: Template Analyze Code Page (selected only Bandit for brevity)
 
-User is redirected back to the `Upload` page with a filled out table with file metadata, options to view, re-analyze and view each analyzer status and results. User is asked to refresh the page once scans are completed until `Django Channels` are implemented
+User is redirected back to the `Upload` page with a filled out table with file metadata, options to view, re-analyze and view each analyzer status and results. Django Channels are now integrated so the user can see live updates occur as the analyzers go through their orchestration.
 
 ![Analysis Page](documentation/supporting_images/01-05-post-login-4_1.png)
 
