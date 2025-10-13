@@ -236,8 +236,31 @@ def run_mypy_analyzer(run):
         if exit_code != 0 and not stdout:
             run.status = Run.Status.ERRORED
             run.completed_at = timezone.now()
-            run.save(update_fields=["status", "completed_at"])
-            return {"error": stderr}
+            run.findings_count = 0
+            run.analyzer_version = get_analyzer_version("mypy")
+            run.severity_counts = OrderedDict()
+            run.save(update_fields=["status", "completed_at", "findings_count", "analyzer_version", "severity_counts"])
+
+            # Get the active Django Channels layer
+            channel_layer = get_channel_layer()
+
+            # Send WebSocket update after database commit completes
+            transaction.on_commit(
+                lambda: async_to_sync(channel_layer.group_send)(
+                    f"analyzer_{run.submitted_file.sha256}",
+                    {
+                        "type": "send_update",
+                        "data": {
+                            "analyzer": run.analyzer,
+                            "status": run.status,
+                            "severity_counts": run.severity_counts,
+                            "findings_count": run.findings_count,
+                            "run_url": reverse("run_detail", args=[run.id]),
+                        },
+                    },
+                ),
+            )
+            return {"error": stderr or "MyPy execution failed"}
 
         # No issues signaled with a blank stdout
         if stdout == "":
@@ -245,13 +268,27 @@ def run_mypy_analyzer(run):
             run.completed_at = timezone.now()
             run.findings_count = 0
             run.analyzer_version = get_analyzer_version("mypy")
-            run.save(
-                update_fields=[
-                    "status",
-                    "completed_at",
-                    "findings_count",
-                    "analyzer_version",
-                ],
+            run.severity_counts = OrderedDict([("note", 0), ("error", 0)])  # consistent schema
+            run.save(update_fields=["status", "completed_at", "findings_count", "analyzer_version", "severity_counts"])
+
+            # Get the active Django Channels layer
+            channel_layer = get_channel_layer()
+
+            # Send WebSocket update after database commit completes
+            transaction.on_commit(
+                lambda: async_to_sync(channel_layer.group_send)(
+                    f"analyzer_{run.submitted_file.sha256}",
+                    {
+                        "type": "send_update",
+                        "data": {
+                            "analyzer": run.analyzer,
+                            "status": run.status,
+                            "severity_counts": run.severity_counts,
+                            "findings_count": run.findings_count,
+                            "run_url": reverse("run_detail", args=[run.id]),
+                        },
+                    },
+                ),
             )
             return {"results": []}
 
@@ -260,7 +297,7 @@ def run_mypy_analyzer(run):
             r"^(?P<file>.+?):(?P<line>\d+)(?::(?P<col>\d+))?:\s*(?P<type>\w+):\s*(?P<message>.*?)(?:\s*\[(?P<code>[-\w]+)\])?$",
         )
 
-        # === Simple sequential rule_id counter ===
+        # Simple sequential rule_id counter
         counter = 1
 
         for line in stdout.splitlines():
@@ -343,10 +380,6 @@ def run_mypy_analyzer(run):
         # Get the active Django Channels layer
         channel_layer = get_channel_layer()
 
-        # Update run status and save it before notifying the frontend
-        run.status = Run.Status.COMPLETED
-        run.save()
-
         # Send WebSocket update after database commit completes
         transaction.on_commit(
             lambda: async_to_sync(channel_layer.group_send)(
@@ -365,6 +398,7 @@ def run_mypy_analyzer(run):
         )
 
     except Exception as e:
+        # Capture any unexpected analyzer-level exceptions
         run.status = Run.Status.ERRORED
         run.completed_at = timezone.now()
         run.save(update_fields=["status", "completed_at"])

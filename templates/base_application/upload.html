@@ -640,6 +640,10 @@
 
       socket.onmessage = function (e) {
         const data = JSON.parse(e.data);
+
+        // Only handle Semgrep messages
+        if (!data.analyzer || data.analyzer.toLowerCase() !== "semgrep") return;
+
         const badgeEl = document.querySelector(`#semgrep-badge-${sha256}`);
         if (!badgeEl) return;
 
