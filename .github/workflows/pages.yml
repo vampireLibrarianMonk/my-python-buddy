@@ -52,6 +52,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: coverage_html
+          upload-dir: code_coverage_report
 
   deploy:
     needs: build
