@@ -1,3 +1,13 @@
+"""
+URL config for core project.
+
+# This file defines the WebSocket consumer responsible for real-time analyzer updates in Django Channels.
+# It manages client connections, group messaging and streaming of analyzer status or findings to the browser.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/5.2/topics/http/urls/
+"""
+
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin

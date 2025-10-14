@@ -1,6 +1,17 @@
+"""
+ASGI config for core project.
+
+# This file defines the ASGI (Asynchronous Server Gateway Interface) configuration for the Django project.
+# It allows Django Channels to handle both HTTP and WebSocket connections for real-time, asynchronous communication.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
+"""
+
 # Native
 import os
 
+# Channels
 from channels.auth import AuthMiddlewareStack
 from channels.routing import ProtocolTypeRouter, URLRouter
 
