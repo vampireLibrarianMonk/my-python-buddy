@@ -176,12 +176,16 @@ conda env export --no-builds | grep -v "^prefix: " > environment.yml
 
 ### Apply database migrations
 
+This step applies any pending database schema changes defined in your Django models. Running migrations ensures your database structure stays synchronized with the current state of your application code, preventing runtime errors and maintaining data integrity from older models that have not been modified yet.
+
 ```bash
 python manage.py makemigrations base_application
 python manage.py migrate
 ```
 
 ### Collect static assets
+
+This command gathers all static files (Cascading Style Sheets, JavaScript, images) from individual application directories into a single `STATIC_ROOT` location. It is essential for production environments, allowing efficient serving of static resources through a web server.
 
 ```bash
 python manage.py collectstatic --noinput
@@ -207,6 +211,7 @@ The project will accumulate a suite of **unit**, **integration** and **acceptanc
 
 - **Test Files Location:** `base_application/tests`
 - **Test Documentation:** `documentation/test`
+  - Each test specification has the directions to run each individual tests.
 
 ### Run all tests
 
