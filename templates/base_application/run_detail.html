@@ -171,8 +171,8 @@
         row.scrollIntoView({ block: 'center', behavior: 'smooth' });
         codeViewer.focus({ preventScroll: true });
 
-        // Update hash
-        const suffix = colNum ? ('-C' + colNum) : '';
+        // Update hash using tab (\t) escape in URI
+        const suffix = colNum ? ('%09C' + colNum) : '';  // %09 is URI-encoded tab
         history.replaceState(null, '', '#L' + line + suffix);
       }
 
@@ -189,9 +189,8 @@
         });
       });
 
-      // Check if the URL contains a line and column reference (e.g. Line 42/Column 3) and if so scroll directly to that
-      // specific code line and highlight its severity.
-      const m = location.hash.match(/^#L(\d+)(?:-C(\d+))?$/);
+      // Match either literal tab (%09) or encoded tab separator
+      const m = location.hash.match(/^#L(\d+)(?:%09C(\d+))?$/);
       if (m) {
         const deepLinkRow = document.getElementById('L' + m[1]);
         const severity = deepLinkRow ? deepLinkRow.getAttribute('data-severity') : null;

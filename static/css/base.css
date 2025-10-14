@@ -180,11 +180,19 @@ input[type="file"] { padding: .5rem 0; }
 .badge-failed { background: #f44336; color: white; }
 .badge-success { background: #4CAF50; color: white; }
 
-/* IDE look & feel */
+/* IDE look & feel — keep code left-aligned */
 .code-viewer {
-  border: 1px solid #444; background:#1e1e1e; color:#f5f5f5;
-  font-family: monospace; overflow-x: auto; border-radius: 6px;
+  border: 1px solid #444;
+  background: #1e1e1e;
+  color: #f5f5f5;
+  font-family: "Fira Code", "Source Code Pro", monospace;
+  overflow-x: auto;
+  border-radius: 6px;
   outline: none;
+
+  text-align: left;
+  margin: 1rem 0;
+  padding: 0.5rem 0 0 0;     /* minimal padding: removes left inset */
 }
 
 /* Compact single-line code rows */
@@ -195,6 +203,9 @@ input[type="file"] { padding: .5rem 0; }
   font-size: 14px;
   line-height: 1em;         /* matches text height */
   table-layout: fixed;
+
+  /* Keep table content aligned left */
+  text-align: left;
 }
 
 .code-row {
@@ -203,9 +214,11 @@ input[type="file"] { padding: .5rem 0; }
 }
 
 .code-row td {
-  padding: 0;               /* remove default table cell padding */
+  padding: 0;
   margin: 0;
-  vertical-align: middle;   /* centers text exactly on baseline */
+  border: none;
+  text-align: left;
+  vertical-align: top;       /* correct vertical alignment */
 }
 
 .code-row:nth-child(odd)  { background-color: #1e1e1e; }
@@ -214,40 +227,42 @@ input[type="file"] { padding: .5rem 0; }
 
 .gutter {
   text-align: right;
-  padding: 0 .4rem;          /* reduced horizontal padding */
+  padding: 0 0.6rem 0 0.5rem;
   color:#888;
   user-select:none;
   white-space:nowrap;
   border-right: 1px solid #333;
-  width: 1%;
+  width: 4ch;                /* fixed-width gutter */
 }
 
 .code-cell {
   position: relative;
-  padding: 0 .4rem;          /* reduced vertical padding */
+  padding: 0;                /* completely flush to gutter */
   white-space: pre;
-  font-family: monospace;
-  --pad-left: .4rem;         /* sync with padding */
-  line-height: 1em;
+  font-family: "Fira Code", "Source Code Pro", monospace;
+  font-size: 14px;
+  line-height: 1.3em;
+  text-align: left;
+  --pad-left: 0;
 }
 
-/* Thin vertical column highlight (1ch wide), positioned via --col */
-.col-highlight {
-  position: absolute;
-  top: 0; bottom: 0;
-  width: 1ch;
-  background: #ffd54a66;
-  left: calc((var(--col, 1) - 1) * 1ch + var(--pad-left));
-  pointer-events: none;
+/* Highlight the entire code line when selected */
+.line-highlight td {
+  background-color: rgba(255, 255, 0, 0.15) !important;
 }
 
 /* Hover line effect like Visual Studio Code */
 .code-viewer table tbody tr:hover { background-color: #333a45 !important; }
 
-/* Thin vertical column highlight (1ch wide), positioned via --col */
+/* Column highlight configuration */
 .col-highlight {
-  position: absolute; top: 0; bottom: 0; width: 1ch;
-  left: calc((var(--col, 1) - 1) * 1ch + var(--pad-left));
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0.35ch;
+  left: calc((var(--col, 1) - 1) * 0.62ch + var(--pad-left));
+  background: rgba(255, 213, 74, 0.4);
+  border-radius: 1px;
   pointer-events: none;
   opacity: 0.8;
 }
@@ -263,6 +278,3 @@ input[type="file"] { padding: .5rem 0; }
   background-color: #cfd8dc; /* darker flash */
   transition: background-color 0.2s ease-in-out;
 }
-
-
-
