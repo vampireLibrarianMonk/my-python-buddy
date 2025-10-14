@@ -2,6 +2,7 @@
 import json
 import re
 import subprocess  # nosec B404: subprocess is used safely with shell=False and fixed arguments
+import tempfile
 from collections import Counter, OrderedDict, defaultdict
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as get_version
@@ -22,9 +23,6 @@ from django.utils import timezone
 
 # Dodgy
 from dodgy.checks import check_file_contents
-
-# MyPy
-from mypy import api as mypy_api
 
 # Vulture
 from vulture import Vulture
@@ -217,9 +215,12 @@ def run_mypy_analyzer(run):
     try:
         file_path = run.submitted_file.file.path
 
-        # Run mypy with diagnostic flags for rule codes and columns
-        stdout, stderr, exit_code = mypy_api.run(
-            [
+        # Run MyPy as a subprocess with isolation and timeout
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cmd = [
+                "mypy",
+                "--no-incremental",  # avoid shared cache locks
+                f"--cache-dir={tmpdir}",  # isolated temp cache
                 "--show-error-codes",  # include mypy error codes
                 "--show-column-numbers",  # show column for findings
                 "--disallow-untyped-defs",  # flag untyped functions
@@ -229,8 +230,25 @@ def run_mypy_analyzer(run):
                 "--show-error-context",  # include 'note:' follow-ups
                 "--no-error-summary",  # keep raw output readable
                 file_path,  # target file path
-            ],
-        )
+            ]
+
+            try:
+                result = subprocess.run(  # nosec B603: shell=False, trusted cmd list, no untrusted input
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    shell=False,
+                    timeout=30,  # hard stop after 30 seconds
+                )
+                stdout = result.stdout
+                stderr = result.stderr
+                exit_code = result.returncode
+            except subprocess.TimeoutExpired:
+                run.status = Run.Status.ERRORED
+                run.completed_at = timezone.now()
+                run.save(update_fields=["status", "completed_at"])
+                return {"error": "MyPy timed out after 30s"}
 
         # If mypy fails entirely with no output
         if exit_code != 0 and not stdout:
