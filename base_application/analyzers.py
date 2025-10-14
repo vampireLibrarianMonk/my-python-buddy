@@ -1,3 +1,5 @@
+# Static Code Analyzer run methods.
+
 # Native
 import json
 import re

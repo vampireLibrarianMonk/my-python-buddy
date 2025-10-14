@@ -1,3 +1,6 @@
+# Django ORM models defining core database structures for analysis data
+# Docs: https://docs.djangoproject.com/en/stable/topics/db/models/
+
 # Native
 from collections import OrderedDict
 

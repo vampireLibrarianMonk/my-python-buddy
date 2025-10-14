@@ -1,3 +1,6 @@
+# Django view logic handling user requests and application workflows
+# Docs: https://docs.djangoproject.com/en/stable/topics/http/views/
+
 # Standard library
 import hashlib
 import os

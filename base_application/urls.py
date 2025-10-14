@@ -1,5 +1,9 @@
+# Routing for base_application
+
+# Django
 from django.urls import path
 
+# Views
 from .views import (
     analyze_file_view,
     bandit_status_json,
@@ -15,17 +19,24 @@ from .views import (
     vulture_status_json,
 )
 
+# Pathway routing for base_application
 urlpatterns = [
+    # File menu
     path("", upload_view, name="upload"),
+    # File upload success
     path("success/", upload_success_view, name="upload_success"),
+    # Application system checks and associated versions
     path("healthz/", healthcheck_view, name="healthcheck"),
+    # Menu actions
     path("analyze/<str:sha256>/", analyze_file_view, name="analyze_file"),
     path("delete/<str:sha256>/", delete_file_view, name="delete_file"),
     path("run-analyzer/<str:sha256>/<str:analyzer>/", run_analyzer, name="run_analyzer"),
+    # Application Programming Interface for analyzers
     path("api/bandit-statuses/", bandit_status_json, name="bandit_status_json"),
     path("api/dodgy-statuses/", dodgy_status_json, name="dodgy_status_json"),
     path("api/mypy-statuses/", mypy_status_json, name="mypy_status_json"),
     path("api/semgrep-statuses/", semgrep_status_json, name="semgrep_status_json"),
     path("api/vulture-statuses/", vulture_status_json, name="vulture_status_json"),
+    # Analysis results for a particular run
     path("runs/<int:pk>/", run_detail, name="run_detail"),
 ]

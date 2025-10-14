@@ -1,7 +1,10 @@
+# Static Code Analyzer Task Assignment
+
 # Native
 import os
 from concurrent.futures import ThreadPoolExecutor
 
+# Analyzer
 from base_application.analyzers import (
     run_bandit_analyzer,
     run_dodgy_analyzer,

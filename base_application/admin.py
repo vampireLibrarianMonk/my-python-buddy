@@ -1,8 +1,13 @@
+# Django admin configuration for analysis models
+# Docs: https://docs.djangoproject.com/en/stable/ref/contrib/admin/
+
+# Django
 from django.contrib import admin
 
 from .models import Finding, Run, SubmittedFile
 
 
+# Inline display of analyzer runs under submitted files
 class RunInline(admin.TabularInline):
     model = Run
     extra = 0
@@ -11,6 +16,7 @@ class RunInline(admin.TabularInline):
     show_change_link = True
 
 
+# Admin view configuration for uploaded code submissions
 @admin.register(SubmittedFile)
 class SubmittedFileAdmin(admin.ModelAdmin):
     list_display = ("saved_name", "original_name", "sha256", "uploaded_at", "analysis_status", "analysis_findings")
@@ -19,6 +25,7 @@ class SubmittedFileAdmin(admin.ModelAdmin):
     inlines = [RunInline]
 
 
+# Inline display of findings under each analyzer run
 class FindingInline(admin.TabularInline):
     model = Finding
     extra = 0
@@ -45,6 +52,7 @@ class FindingInline(admin.TabularInline):
     show_change_link = True
 
 
+# Admin view configuration for analyzer run details
 @admin.register(Run)
 class RunAdmin(admin.ModelAdmin):
     list_display = ("id", "submitted_file", "analyzer", "status", "started_at", "completed_at", "findings_count")
