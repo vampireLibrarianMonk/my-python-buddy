@@ -3,12 +3,6 @@ name: Code Coverage → GitHub Pages
 on:
   push:
     branches: [base-scaffolding, analyzer-scaffolding]
-    paths:
-      - ".github/workflows/pages.yml"
-      - "base_application/tests/**"
-      - "core/**"
-      - "environment.yml"
-      - "templates/**"
   workflow_dispatch:
 
 permissions:
@@ -26,33 +20,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Set up conda from the environment.yml
       - name: Setup Conda (Miniforge)
         uses: conda-incubator/setup-miniconda@v3
         with:
-          miniforge-version: latest
-          use-mamba: true
-          auto-activate-base: false
-          activate-environment: my-python-buddy
           environment-file: environment.yml
-          channel-priority: strict
+          use-mamba: true
+          activate-environment: my-python-buddy
 
-      # Run Django tests under coverage and build the HTML report
-      - name: Test with Django + build coverage HTML
+      - name: Run Django tests and generate coverage HTML
         shell: bash -l {0}
         run: |
           coverage run manage.py test
           coverage html -d coverage_html
-          touch coverage_html/.nojekyll
+          mkdir -p site/code_coverage_report
+          mv coverage_html/* site/code_coverage_report/
+          touch site/.nojekyll
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload coverage site
+      - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: coverage_html
-          upload-dir: code_coverage_report
+          path: site
 
   deploy:
     needs: build
