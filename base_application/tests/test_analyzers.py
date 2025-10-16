@@ -4,7 +4,7 @@ import shutil
 import tempfile
 
 # Testing
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -625,6 +625,32 @@ class AnalyzerTests(TestCase):
             # Verify the error dictionary is returned
             self.assertIn("error", result)
             self.assertIn("failed task", result["error"])
+
+    def test_run_mypy_analyzer_handles_empty_output(self):
+        # Simulate MyPy returning nonzero exit code with empty stdout (no findings).
+        mock_result = MagicMock()
+        mock_result.stdout = ""  # No MyPy output
+        mock_result.stderr = "Internal MyPy failure"  # Something in stderr
+        mock_result.returncode = 2  # Nonzero exit
+
+        with patch("base_application.analyzers.subprocess.run", return_value=mock_result):
+            run = Run.objects.create(
+                submitted_file=self.clean_file,
+                analyzer="mypy",
+                status=Run.Status.REQUESTED,
+            )
+            result = run_mypy_analyzer(run)
+            run.refresh_from_db()
+
+            # Verify run marked as ERRORED
+            self.assertEqual(run.status, Run.Status.ERRORED)
+            self.assertIsNotNone(run.completed_at)
+            self.assertEqual(run.findings_count, 0)
+
+            # Verify severity_counts and analyzer version set
+            self.assertIn("error", result)
+            self.assertIn("Internal MyPy failure", result["error"])
+            self.assertIsInstance(run.severity_counts, dict)
 
     def test_run_semgrep_analyzer_exception_marks_error(self):
         # Force subprocess.run inside semgrep analyzer to raise an exception
