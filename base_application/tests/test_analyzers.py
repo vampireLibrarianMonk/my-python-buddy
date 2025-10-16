@@ -65,14 +65,34 @@ EXPECTED_FINDINGS_DODGY = [
 
 # Expected Mypy findings for mypy_ringer_test.py
 EXPECTED_FINDINGS_MYPY = [
-    {"severity": "note", "rule_id": "MYPY-001", "line": 0, "column": 0},
-    {"severity": "note", "rule_id": "MYPY-003", "line": 0, "column": 0},
-    {"severity": "note", "rule_id": "MYPY-005", "line": 0, "column": 0},
-    {"severity": "note", "rule_id": "MYPY-007", "line": 0, "column": 0},
-    {"severity": "error", "rule_id": "MYPY-002", "line": 6, "column": 12},
-    {"severity": "error", "rule_id": "MYPY-004", "line": 10, "column": 1},
-    {"severity": "error", "rule_id": "MYPY-006", "line": 18, "column": 0},
-    {"severity": "error", "rule_id": "MYPY-008", "line": 23, "column": 11},
+    {
+        "severity": "error",
+        "rule_id": "MYPY-001",
+        "message": 'In function "add_numbers". Incompatible return value type (got "str", expected "int")',
+        "line": 6,
+        "column": 12,
+    },
+    {
+        "severity": "error",
+        "rule_id": "MYPY-002",
+        "message": 'In function "passthrough". Function is missing a type annotation',
+        "line": 10,
+        "column": 1,
+    },
+    {
+        "severity": "error",
+        "rule_id": "MYPY-003",
+        "message": 'At top level. Unused "type: ignore" comment',
+        "line": 18,
+        "column": 0,
+    },
+    {
+        "severity": "error",
+        "rule_id": "MYPY-004",
+        "message": 'In function "missing_var". Name "z" is not defined',
+        "line": 23,
+        "column": 11,
+    },
 ]
 
 # Expected Semgrep findings for semgrep_ringer_test.py
@@ -604,7 +624,7 @@ class AnalyzerTests(TestCase):
 
     def test_run_mypy_analyzer_exception_marks_error(self):
         # Force mypy_api.run to raise an exception so the analyzer falls into the error path
-        with patch("base_application.analyzers.mypy_api.run", side_effect=RuntimeError("failed task")):
+        with patch("base_application.analyzers.subprocess.run", side_effect=RuntimeError("failed task")):
             run = Run.objects.create(
                 submitted_file=self.clean_file,
                 analyzer="mypy",

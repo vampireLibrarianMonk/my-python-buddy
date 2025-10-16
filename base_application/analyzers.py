@@ -288,7 +288,7 @@ def run_mypy_analyzer(run):
             run.completed_at = timezone.now()
             run.findings_count = 0
             run.analyzer_version = get_analyzer_version("mypy")
-            run.severity_counts = OrderedDict([("note", 0), ("error", 0)])  # consistent schema
+            run.severity_counts = OrderedDict([("error", 0)])  # consistent schema
             run.save(update_fields=["status", "completed_at", "findings_count", "analyzer_version", "severity_counts"])
 
             # Get the active Django Channels layer
@@ -320,27 +320,27 @@ def run_mypy_analyzer(run):
         # Simple sequential rule_id counter
         counter = 1
 
+        pending_note = None  # store last note context
+
         for line in stdout.splitlines():
             line = line.strip()
             match = pattern.match(line)
+
+            # Pre-clean for "note:" lines with path prefixes
+            cleaned_line = re.sub(r"^.*?:\s*note:\s*", "", line).strip()
+
+            # Skip summary/footer lines
             if not match:
-                # Skip footer lines like "Found X error(s)" or lone numbers
                 if not line.startswith("Found ") and not line.isdigit():
-                    Finding.objects.create(
-                        run=run,
-                        severity="note",
-                        rule_id=f"MYPY-{counter:03d}",
-                        title="Unparsed MyPy Output",
-                        message=line,
-                        line=0,
-                        column=0,
-                        reference="https://mypy.readthedocs.io/",
-                        file_hash=run.submitted_file.sha256,
-                        file_name=run.submitted_file.saved_name,
-                    )
-                    counter += 1
+                    # Identify standalone "note" context lines (no match)
+                    if "note:" in line:
+                        # Save it temporarily to attach to next error
+                        pending_note = cleaned_line.rstrip(":")
+                    else:
+                        counter += 1
                 continue
 
+            # Normal MyPy structured line
             data = match.groupdict()
             file_name = run.submitted_file.saved_name
             line_num = int(data.get("line") or 0)
@@ -348,12 +348,12 @@ def run_mypy_analyzer(run):
             msg_type = data.get("type", "error").lower()
             message = data.get("message", "").strip()
 
-            # Map directly to Mypy categories
-            if msg_type == "error":
-                severity = "error"
-            else:
-                severity = "note"
+            # If this is an error and we have a pending note → prepend it
+            if msg_type == "error" and pending_note:
+                message = f"{pending_note}. {message}"
+                pending_note = None  # reset after use
 
+            severity = "error"
             rule_id = f"MYPY-{counter:03d}"
             counter += 1
 
@@ -377,7 +377,6 @@ def run_mypy_analyzer(run):
 
         run.severity_counts = OrderedDict(
             [
-                ("note", category_counter.get("note", 0)),
                 ("error", category_counter.get("error", 0)),
             ],
         )

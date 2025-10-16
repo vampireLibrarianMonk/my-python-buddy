@@ -75,7 +75,7 @@
               switch (sortKey) {
                 case "severity":
                   // Custom severity order
-                  const order = ["critical", "high", "medium", "low", "info", "warning", "note", "dodgy"];
+                  const order = ["critical", "high", "medium", "low", "info", "warning", "dodgy"];
                   return order.indexOf(row.dataset.severity || "") || 99;
                 case "rule":
                   return row.cells[1].innerText.trim().toLowerCase();
