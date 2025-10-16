@@ -234,23 +234,18 @@ def run_mypy_analyzer(run):
                 file_path,  # target file path
             ]
 
-            try:
-                result = subprocess.run(  # nosec B603: shell=False, trusted cmd list, no untrusted input
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                    shell=False,
-                    timeout=30,  # hard stop after 30 seconds
-                )
-                stdout = result.stdout
-                stderr = result.stderr
-                exit_code = result.returncode
-            except subprocess.TimeoutExpired:
-                run.status = Run.Status.ERRORED
-                run.completed_at = timezone.now()
-                run.save(update_fields=["status", "completed_at"])
-                return {"error": "MyPy timed out after 30s"}
+            # Run MyPy assembled command in subprocess
+            result = subprocess.run(  # nosec B603: shell=False, trusted cmd list, no untrusted input
+                cmd,
+                capture_output=True,
+                text=True,
+                check=False,
+                shell=False,
+                timeout=30,  # hard stop after 30 seconds
+            )
+            stdout = result.stdout
+            stderr = result.stderr
+            exit_code = result.returncode
 
         # If mypy fails entirely with no output
         if exit_code != 0 and not stdout:
@@ -496,21 +491,18 @@ def run_semgrep_analyzer(run):
                     continue
                 seen.add(key)
 
-                try:
-                    Finding.objects.get_or_create(
-                        run=run,
-                        severity=sev,
-                        rule_id=check_id,
-                        title=f"Semgrep ({label}): {check_id}",
-                        message=msg,
-                        line=line,
-                        column=col,
-                        reference=rule_url,
-                        file_hash=run.submitted_file.sha256,
-                        file_name=run.submitted_file.saved_name,
-                    )
-                except Exception as fe:
-                    print(f"[Semgrep Finding Error] {fe}")
+                Finding.objects.get_or_create(
+                    run=run,
+                    severity=sev,
+                    rule_id=check_id,
+                    title=f"Semgrep ({label}): {check_id}",
+                    message=msg,
+                    line=line,
+                    column=col,
+                    reference=rule_url,
+                    file_hash=run.submitted_file.sha256,
+                    file_name=run.submitted_file.saved_name,
+                )
 
         # Unified severity breakdown
         # All Semgrep rules have one of four severity levels: Critical, High, Medium, or Low.
@@ -598,10 +590,8 @@ def run_vulture_analyzer(run):
                 return "CRITICAL"
             elif confidence >= 80:
                 return "HIGH"
-            elif confidence >= 60:
-                return "MEDIUM"  # broaden range for realism
             else:
-                return "LOW"
+                return "MEDIUM"  # broaden range for realism
 
         # Process each unused code element reported by Vulture
         for item in unused_items:
