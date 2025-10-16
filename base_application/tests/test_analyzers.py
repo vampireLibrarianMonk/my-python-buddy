@@ -301,10 +301,7 @@ class AnalyzerTests(TestCase):
         self.assertIsInstance(run.severity_counts, dict, msg="Severity counts not stored correctly")
 
         # Retrieve persisted findings from database
-        if hasattr(run, "findings"):
-            stored_findings = list(run.findings.values("rule_id", "severity", "line", "column"))
-        else:
-            stored_findings = []
+        stored_findings = list(run.findings.values("rule_id", "severity", "line", "column"))
 
         # Convert to simplified tuples for comparison
         actual = [(f["rule_id"], f["severity"], f["line"], f["column"]) for f in stored_findings]
@@ -356,10 +353,7 @@ class AnalyzerTests(TestCase):
         self.assertIsInstance(run.severity_counts, dict, msg="Severity counts not stored correctly")
 
         # Retrieve persisted findings from database
-        if hasattr(run, "findings"):
-            stored_findings = list(run.findings.values("rule_id", "line", "column"))
-        else:
-            stored_findings = []
+        stored_findings = list(run.findings.values("rule_id", "line", "column"))
 
         # Convert to simplified tuples for comparison
         actual = [(f["rule_id"], f["line"], f["column"]) for f in stored_findings]
@@ -411,10 +405,7 @@ class AnalyzerTests(TestCase):
         self.assertIsInstance(run.severity_counts, dict, msg="Severity counts not stored correctly")
 
         # Retrieve persisted findings from database (supports JSONField or related model)
-        if hasattr(run, "findings"):
-            stored_findings = list(run.findings.values("rule_id", "line", "column"))
-        else:
-            stored_findings = []
+        stored_findings = list(run.findings.values("rule_id", "line", "column"))
 
         # Convert to simplified tuples for comparison
         actual = [(f["rule_id"], f["line"], f["column"]) for f in stored_findings]
@@ -466,10 +457,7 @@ class AnalyzerTests(TestCase):
         self.assertIsInstance(run.severity_counts, dict, msg="Severity counts not stored correctly")
 
         # Retrieve persisted findings from database
-        if hasattr(run, "findings"):
-            stored_findings = list(run.findings.values("rule_id", "line", "column"))
-        else:
-            stored_findings = []
+        stored_findings = list(run.findings.values("rule_id", "line", "column"))
 
         # Convert to simplified tuples for comparison
         actual = [(f["rule_id"], f["line"], f["column"]) for f in stored_findings]
@@ -521,10 +509,7 @@ class AnalyzerTests(TestCase):
         self.assertIsInstance(run.severity_counts, dict, msg="Severity counts not stored correctly")
 
         # Retrieve persisted findings from database
-        if hasattr(run, "findings"):
-            stored_findings = list(run.findings.values("rule_id", "line", "column"))
-        else:
-            stored_findings = []
+        stored_findings = list(run.findings.values("rule_id", "line", "column"))
 
         # Convert to simplified tuples for comparison
         actual = [(f["rule_id"], f["line"], f["column"]) for f in stored_findings]
