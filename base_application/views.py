@@ -34,65 +34,6 @@ from base_application.taskings import executor, run_analyzer_task
 from .forms import AnalyzerSelectForm, UploadPyForm
 from .models import SubmittedFile
 
-# First phase templating until analyzers are implemented TODO delete once all analyzers are implemented.
-SAMPLE_FINDINGS_MAP_TEMPLATE = {
-    "bandit": [
-        {
-            "analyzer": "bandit",
-            "severity": "<LOW|MEDIUM|HIGH>",
-            "rule_id": "<B3xx or other Bandit ID>",
-            "title": "<Short title e.g., Insecure hash usage>",
-            "message": "<Human-friendly explanation of the issue>",
-            "location": {"line": "<LINE_NUMBER>", "column": "<COLUMN_NUMBER>"},
-            "reference": "https://bandit.readthedocs.io/",
-        },
-    ],
-    "semgrep": [
-        {
-            "analyzer": "semgrep",
-            "severity": "<INFO|WARNING|ERROR>",
-            "rule_id": "<semgrep.rule.id>",
-            "title": "<Short title e.g., Insecure hash: MD5>",
-            "message": "<Why it matters / suggested fix>",
-            "location": {"line": "<LINE_NUMBER>", "column": "<COLUMN_NUMBER>"},
-            "reference": "https://semgrep.dev/",
-        },
-    ],
-    "mypy": [
-        {
-            "analyzer": "mypy",
-            "severity": "<NOTE|WARNING|ERROR>",
-            "rule_id": "<mypy-code e.g., assignment|arg-type|call-arg>",
-            "title": "<Short title e.g., Incompatible types in assignment>",
-            "message": "<Expected vs actual types and where they came from>",
-            "location": {"line": "<LINE_NUMBER>", "column": "<COLUMN_NUMBER>"},
-            "reference": "https://mypy.readthedocs.io/en/stable/",
-        },
-    ],
-    "vulture": [
-        {
-            "analyzer": "vulture",
-            "severity": "<INFO|LOW>",
-            "rule_id": "<unused-function|unused-variable|unused-import>",
-            "title": "<Short title e.g., Dead code: unused function>",
-            "message": "<What is unused and suggested cleanup>",
-            "location": {"line": "<LINE_NUMBER>", "column": "<COLUMN_NUMBER>"},
-            "reference": "https://github.com/jendrikseipp/vulture",
-        },
-    ],
-    "dodgy": [
-        {
-            "analyzer": "dodgy",
-            "severity": "<LOW|MEDIUM|HIGH>",
-            "rule_id": "<hardcoded-secret|insecure-usage|suspicious-pattern>",
-            "title": "<Short title e.g., Possible hardcoded credential>",
-            "message": "<What looks sensitive and why it’s risky>",
-            "location": {"line": "<LINE_NUMBER>", "column": "<COLUMN_NUMBER>"},
-            "reference": "https://github.com/landscapeio/dodgy",
-        },
-    ],
-}
-
 
 def _safe_unique_py_name(original_filename: str) -> str:
     """
