@@ -394,6 +394,13 @@
         const badgeEl = document.querySelector(`#bandit-badge-${sha256}`);
         if (!badgeEl) return;
 
+        // Timestamp guard: ignore stale or out-of-order updates
+        if (badgeEl.dataset.lastUpdate && badgeEl.dataset.lastUpdate > data.timestamp) {
+          console.debug("Ignoring stale update for", data.analyzer);
+          return;
+        }
+        badgeEl.dataset.lastUpdate = data.timestamp;
+
         // 1) Update the Bandit status badge consistently
         const { text, cls } = mapStatusToBadge(data.status);
         badgeEl.textContent = text;
@@ -477,6 +484,13 @@
 
         const badgeEl = document.querySelector(`#dodgy-badge-${sha256}`);
         if (!badgeEl) return;
+
+        // Timestamp guard: ignore stale or out-of-order updates
+        if (badgeEl.dataset.lastUpdate && badgeEl.dataset.lastUpdate > data.timestamp) {
+          console.debug("Ignoring stale update for", data.analyzer);
+          return;
+        }
+        badgeEl.dataset.lastUpdate = data.timestamp;
 
         // 1) Update the Dodgy status badge consistently
         const { text, cls } = mapStatusToBadge(data.status);
@@ -562,6 +576,13 @@
         const badgeEl = document.querySelector(`#mypy-badge-${sha256}`);
         if (!badgeEl) return;
 
+        // Timestamp guard: ignore stale or out-of-order updates
+        if (badgeEl.dataset.lastUpdate && badgeEl.dataset.lastUpdate > data.timestamp) {
+          console.debug("Ignoring stale update for", data.analyzer);
+          return;
+        }
+        badgeEl.dataset.lastUpdate = data.timestamp;
+
         // 1) Update the MyPy status badge consistently
         const { text, cls } = mapStatusToBadge(data.status);
         badgeEl.textContent = text;
@@ -646,6 +667,13 @@
 
         const badgeEl = document.querySelector(`#semgrep-badge-${sha256}`);
         if (!badgeEl) return;
+
+        // Timestamp guard: ignore stale or out-of-order updates
+        if (badgeEl.dataset.lastUpdate && badgeEl.dataset.lastUpdate > data.timestamp) {
+          console.debug("Ignoring stale update for", data.analyzer);
+          return;
+        }
+        badgeEl.dataset.lastUpdate = data.timestamp;
 
         // 1) Update the Semgrep status badge consistently
         const { text, cls } = mapStatusToBadge(data.status);
@@ -734,6 +762,13 @@
 
         const badgeEl = document.querySelector(`#vulture-badge-${sha256}`);
         if (!badgeEl) return;
+
+        // Timestamp guard: ignore stale or out-of-order updates
+        if (badgeEl.dataset.lastUpdate && badgeEl.dataset.lastUpdate > data.timestamp) {
+          console.debug("Ignoring stale update for", data.analyzer);
+          return;
+        }
+        badgeEl.dataset.lastUpdate = data.timestamp;
 
         // 1) Update the Vulture status badge consistently
         const { text, cls } = mapStatusToBadge(data.status);

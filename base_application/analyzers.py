@@ -22,6 +22,7 @@ from django.db import transaction
 # Django
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.timezone import now
 
 # Dodgy
 from dodgy.checks import check_file_contents
@@ -127,6 +128,7 @@ def run_bandit_analyzer(run):
                         "severity_counts": run.severity_counts,
                         "findings_count": run.findings_count,
                         "run_url": reverse("run_detail", args=[run.id]),
+                        "timestamp": now().isoformat(),
                     },
                 },
             ),
@@ -201,6 +203,7 @@ def run_dodgy_analyzer(run):
                         "severity_counts": run.severity_counts,
                         "findings_count": run.findings_count,
                         "run_url": reverse("run_detail", args=[run.id]),
+                        "timestamp": now().isoformat(),
                     },
                 },
             ),
@@ -271,6 +274,7 @@ def run_mypy_analyzer(run):
                             "severity_counts": run.severity_counts,
                             "findings_count": run.findings_count,
                             "run_url": reverse("run_detail", args=[run.id]),
+                            "timestamp": now().isoformat(),
                         },
                     },
                 ),
@@ -301,6 +305,7 @@ def run_mypy_analyzer(run):
                             "severity_counts": run.severity_counts,
                             "findings_count": run.findings_count,
                             "run_url": reverse("run_detail", args=[run.id]),
+                            "timestamp": now().isoformat(),
                         },
                     },
                 ),
@@ -406,6 +411,7 @@ def run_mypy_analyzer(run):
                         "severity_counts": run.severity_counts,
                         "findings_count": run.findings_count,
                         "run_url": reverse("run_detail", args=[run.id]),
+                        "timestamp": now().isoformat(),
                     },
                 },
             ),
@@ -552,6 +558,7 @@ def run_semgrep_analyzer(run):
                         "severity_counts": run.severity_counts,
                         "findings_count": run.findings_count,
                         "run_url": reverse("run_detail", args=[run.id]),
+                        "timestamp": now().isoformat(),
                     },
                 },
             ),
@@ -657,6 +664,7 @@ def run_vulture_analyzer(run):
                         "severity_counts": run.severity_counts,
                         "findings_count": run.findings_count,
                         "run_url": reverse("run_detail", args=[run.id]),
+                        "timestamp": now().isoformat(),
                     },
                 },
             ),
