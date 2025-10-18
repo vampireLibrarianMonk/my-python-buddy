@@ -75,6 +75,8 @@ def severity_default():
             ("info", 0),
             ("warning", 0),
             ("error", 0),
+            # Dodgy
+            ("dodgy", 0),
         ],
     )
 

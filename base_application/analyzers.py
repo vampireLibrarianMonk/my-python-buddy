@@ -87,10 +87,10 @@ def run_bandit_analyzer(run):
         # Severity Tracking (Ordered)
         run.severity_counts = OrderedDict(
             [
-                ("LOW", severity_counter.get("LOW", 0)),
-                ("MEDIUM", severity_counter.get("MEDIUM", 0)),
-                ("HIGH", severity_counter.get("HIGH", 0)),
-                ("CRITICAL", severity_counter.get("CRITICAL", 0)),
+                ("Low", severity_counter.get("LOW", 0)),
+                ("Medium", severity_counter.get("MEDIUM", 0)),
+                ("High", severity_counter.get("HIGH", 0)),
+                ("Critical", severity_counter.get("CRITICAL", 0)),
             ],
         )
 
@@ -281,7 +281,7 @@ def run_mypy_analyzer(run):
             run.completed_at = timezone.now()
             run.findings_count = 0
             run.analyzer_version = get_analyzer_version("mypy")
-            run.severity_counts = OrderedDict([("error", 0)])  # consistent schema
+            run.severity_counts = OrderedDict([("Error", 0)])  # consistent schema
             run.save(update_fields=["status", "completed_at", "findings_count", "analyzer_version", "severity_counts"])
 
             # Get the active Django Channels layer
@@ -347,7 +347,7 @@ def run_mypy_analyzer(run):
                 message = f"{pending_note}. {message}"
                 pending_note = None  # reset after use
 
-            severity = "error"
+            severity = "Error"
             rule_id = f"MYPY-{counter:03d}"
             counter += 1
 
@@ -371,7 +371,7 @@ def run_mypy_analyzer(run):
 
         run.severity_counts = OrderedDict(
             [
-                ("error", category_counter.get("error", 0)),
+                ("Error", category_counter.get("Error", 0)),
             ],
         )
 
@@ -511,10 +511,10 @@ def run_semgrep_analyzer(run):
         severity_counter = Counter(run.findings.values_list("severity", flat=True))
         run.severity_counts = OrderedDict(
             [
-                ("LOW", severity_counter.get("LOW", 0)),
-                ("MEDIUM", severity_counter.get("MEDIUM", 0)),
-                ("HIGH", severity_counter.get("HIGH", 0)),
-                ("CRITICAL", severity_counter.get("CRITICAL", 0)),
+                ("Low", severity_counter.get("LOW", 0)),
+                ("Medium", severity_counter.get("MEDIUM", 0)),
+                ("High", severity_counter.get("HIGH", 0)),
+                ("Critical", severity_counter.get("CRITICAL", 0)),
             ],
         )
 
@@ -613,10 +613,10 @@ def run_vulture_analyzer(run):
         severity_counter = Counter(run.findings.values_list("severity", flat=True))
         run.severity_counts = OrderedDict(
             [
-                ("LOW", severity_counter.get("LOW", 0)),
-                ("MEDIUM", severity_counter.get("MEDIUM", 0)),
-                ("HIGH", severity_counter.get("HIGH", 0)),
-                ("CRITICAL", severity_counter.get("CRITICAL", 0)),
+                ("Low", severity_counter.get("LOW", 0)),
+                ("Medium", severity_counter.get("MEDIUM", 0)),
+                ("High", severity_counter.get("HIGH", 0)),
+                ("Critical", severity_counter.get("CRITICAL", 0)),
             ],
         )
 
