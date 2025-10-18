@@ -484,7 +484,7 @@ def run_semgrep_analyzer(run):
                 start = issue.get("start", {}) or {}
                 line = int(start.get("line", 0) or 0)
                 col = int(start.get("col", 0) or 0)
-                rule_url = issue.get("extra", {}).get("metadata", {}).get("source", "https://semgrep.dev/rules")
+                rule_url = issue.get("extra", {}).get("metadata", {}).get("source", "https://semgrep.dev/docs")
 
                 key = (check_id, sev, line, msg)
                 if key in seen:
@@ -604,7 +604,7 @@ def run_vulture_analyzer(run):
                 message=f"{item.message or f'Unused {item.typ} named {item.name}'} (confidence {item.confidence}%)",
                 line=item.first_lineno or 0,
                 column=0,
-                reference="https://vulture.readthedocs.io/en/latest/",
+                reference="https://github.com/jendrikseipp/vulture",
                 file_hash=run.submitted_file.sha256,
                 file_name=run.submitted_file.saved_name,
             )
