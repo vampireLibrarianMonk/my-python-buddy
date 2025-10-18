@@ -42,21 +42,21 @@ EXPECTED_FINDINGS_BANDIT = [
 EXPECTED_FINDINGS_DODGY = [
     {
         "severity": "Dodgy",
-        "rule_id": "DODGY",
+        "rule_id": "DODGY-1",
         "message": "Possible hardcoded secret key (variable: secret)",
         "line": 8,
         "column": 0,
     },
     {
         "severity": "Dodgy",
-        "rule_id": "DODGY",
+        "rule_id": "DODGY-2",
         "message": "Possible SSH private key (variable: ssh_rsa_private_key)",
         "line": 12,
         "column": 0,
     },
     {
         "severity": "Dodgy",
-        "rule_id": "DODGY",
+        "rule_id": "DODGY-3",
         "message": "Possible SSH private key (variable: ssh_rsa_private_key)",
         "line": 15,
         "column": 0,
