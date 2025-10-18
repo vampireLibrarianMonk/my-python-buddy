@@ -2,6 +2,8 @@
 
 # Native
 import os
+import secrets
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 # Analyzer
@@ -24,10 +26,18 @@ executor = ThreadPoolExecutor(max_workers=max_workers)
 
 
 def run_analyzer_task(run_id, analyzer):
-    run = Run.objects.get(id=run_id)
+    """
+    Execute a single analyzer task with a small staggered delay.
+    This prevents all analyzers from starting at the exact same time,
+    which can reduce input/output contention and improve log readability.
+    Or if the execution is too quick the status doesn't have a chance to update.
+    """
+    # Random stagger between 300–600 milliseconds (cryptographically safe)
+    time.sleep(secrets.SystemRandom().uniform(0.3, 0.5))
 
-    # Start with Pending
+    run = Run.objects.get(id=run_id)
     run.status = "PENDING"
+    run.save(update_fields=["status"])
 
     # Analyzer assignment
     if analyzer == "bandit":

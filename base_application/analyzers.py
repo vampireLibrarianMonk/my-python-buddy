@@ -112,10 +112,6 @@ def run_bandit_analyzer(run):
         # Get the active Django Channels layer
         channel_layer = get_channel_layer()
 
-        # Update run status and save it before notifying the frontend
-        run.status = Run.Status.COMPLETED
-        run.save()
-
         # Send WebSocket update after database commit completes
         transaction.on_commit(
             lambda: async_to_sync(channel_layer.group_send)(
@@ -151,12 +147,13 @@ def run_dodgy_analyzer(run):
         issues = check_file_contents(file_contents)
 
         # Parse each issue into the Finding model
+        counter = 1
         for line_number, variable_name, reason in issues:
             message = f"{reason} (variable: {variable_name})"
             Finding.objects.get_or_create(
                 run=run,
                 severity="DODGY",
-                rule_id="DODGY",
+                rule_id=f"DODGY-{counter}",
                 title=f"Dodgy variable '{variable_name}' detected",
                 message=message,
                 line=line_number,
@@ -165,10 +162,11 @@ def run_dodgy_analyzer(run):
                 file_hash=run.submitted_file.sha256,
                 file_name=run.submitted_file.saved_name,
             )
+            counter += 1
 
         # === Dodginess metric ===
         dodgy_count = run.findings.count()
-        run.severity_counts = OrderedDict([("DODGIES", dodgy_count)])
+        run.severity_counts = OrderedDict([("Dodgy", dodgy_count)])
 
         run.analyzer_version = get_analyzer_version("dodgy")
         run.findings_count = dodgy_count
@@ -186,10 +184,6 @@ def run_dodgy_analyzer(run):
 
         # Get the active Django Channels layer
         channel_layer = get_channel_layer()
-
-        # Update run status and save it before notifying the frontend
-        run.status = Run.Status.COMPLETED
-        run.save()
 
         # Send WebSocket update after database commit completes
         transaction.on_commit(
@@ -542,10 +536,6 @@ def run_semgrep_analyzer(run):
         # Get the active Django Channels layer
         channel_layer = get_channel_layer()
 
-        # Update run status and save it before notifying the frontend
-        run.status = Run.Status.COMPLETED
-        run.save()
-
         # Send WebSocket update after database commit completes
         transaction.on_commit(
             lambda: async_to_sync(channel_layer.group_send)(
@@ -647,10 +637,6 @@ def run_vulture_analyzer(run):
 
         # Get the active Django Channels layer
         channel_layer = get_channel_layer()
-
-        # Update run status and save it before notifying the frontend
-        run.status = Run.Status.COMPLETED
-        run.save()
 
         # Send WebSocket update after database commit completes
         transaction.on_commit(

@@ -358,464 +358,117 @@
     {% endif %}
 </div>
 
-<!-- Bandit Real-Time WebSocket Updates -->
+<!-- Upload page WebSocket integration. -->
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    function mapStatusToBadge(status) {
-      switch (status) {
-        case "NOT_REQUESTED": return { text: "Not Requested", cls: "badge badge-idle" };
-        case "REQUESTED":     return { text: "Requested",     cls: "badge badge-info" };
-        case "PENDING":       return { text: "Pending",       cls: "badge badge-warn" };
-        case "COMPLETED":     return { text: "Completed",     cls: "badge badge-success" };
-        case "ERRORED":       return { text: "Errored",       cls: "badge badge-failed" };
-        default:              return { text: status,          cls: "badge badge-idle" };
-      }
-    }
+/**
+ * Upload page WebSocket integration.
+ * Handles live analyzer updates via Django Channels.
+ */
+document.addEventListener("DOMContentLoaded", function () {
+  /**
+   * Only point of edit for adding analyzers.
+   */
+  const analyzers = ["bandit", "dodgy", "mypy", "semgrep", "vulture"];
 
-    // Normalize any pre-rendered badges (so refresh shows correct colors)
-    document.querySelectorAll('[id^="bandit-badge-"]').forEach(badgeEl => {
+  /**
+   * Map analyzer status to badge text and CSS class.
+   */
+  function mapStatusToBadge(status) {
+    switch (status) {
+      case "NOT_REQUESTED": return { text: "Not Requested", cls: "badge badge-idle" };
+      case "REQUESTED":     return { text: "Requested",     cls: "badge badge-info" };
+      case "PENDING":       return { text: "Pending",       cls: "badge badge-warn" };
+      case "COMPLETED":     return { text: "Completed",     cls: "badge badge-success" };
+      case "ERRORED":       return { text: "Errored",       cls: "badge badge-failed" };
+      default:              return { text: status,          cls: "badge badge-idle" };
+    }
+  }
+
+  /**
+   * Initialize all badges with correct colors at page load.
+   */
+  analyzers.forEach(analyzer => {
+    document.querySelectorAll(`[id^="${analyzer}-badge-"]`).forEach(badgeEl => {
       const status = (badgeEl.textContent || "").trim().toUpperCase();
       const { text, cls } = mapStatusToBadge(status);
       badgeEl.textContent = text;
       badgeEl.className = cls;
     });
-
-    document.querySelectorAll("td code[title]").forEach(codeEl => {
-      const sha256 = codeEl.getAttribute("title");
-      const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-      const socket = new WebSocket(`${protocol}://${window.location.host}/ws/analyzer/${sha256}/`);
-
-      socket.onmessage = function (e) {
-        const data = JSON.parse(e.data);
-
-        // Only handle Bandit messages
-        if (!data.analyzer || data.analyzer.toLowerCase() !== "bandit") return;
-
-        const badgeEl = document.querySelector(`#bandit-badge-${sha256}`);
-        if (!badgeEl) return;
-
-        // Timestamp guard: ignore stale or out-of-order updates
-        if (badgeEl.dataset.lastUpdate && badgeEl.dataset.lastUpdate > data.timestamp) {
-          console.debug("Ignoring stale update for", data.analyzer);
-          return;
-        }
-        badgeEl.dataset.lastUpdate = data.timestamp;
-
-        // 1) Update the Bandit status badge consistently
-        const { text, cls } = mapStatusToBadge(data.status);
-        badgeEl.textContent = text;
-        badgeEl.className = cls;
-
-        // 2) Update the Bandit Results cell (👁️ or "No Findings" or "–")
-        const resultsTd = badgeEl.closest("td")?.nextElementSibling;
-        if (resultsTd && data.status) {
-          const runUrl = data.run_url || "";
-          if ((data.findings_count || 0) > 0 && runUrl) {
-            resultsTd.innerHTML = `<a class="link" href="${runUrl}" title="View Bandit results">👁️</a>`;
-          } else if (data.status === "COMPLETED") {
-            resultsTd.innerHTML = `<span class="badge badge-success">No Findings</span>`;
-          } else {
-            resultsTd.innerHTML = `<span class="muted" title="No findings yet">–</span>`;
-          }
-        }
-
-        // 3) Update (or create) the per-severity badges under the Bandit cell itself
-        const banditCell = badgeEl.closest("td");
-        if (data.severity_counts && banditCell) {
-          const existingDiv = banditCell.querySelector(".bandit-severity");
-          if (existingDiv) existingDiv.remove();
-
-          const severityDiv = document.createElement("div");
-          severityDiv.className = "bandit-severity";
-          severityDiv.style.marginTop = "0.3rem";
-          severityDiv.style.fontSize = "0.8rem";
-
-          for (const [level, count] of Object.entries(data.severity_counts)) {
-            if (count > 0) {
-              const sev = level.toLowerCase();
-              const span = document.createElement("span");
-              span.className = "badge";
-              span.style.backgroundColor = (window.severityColors?.[sev]?.bg) || "#666";
-              span.style.color = (window.severityColors?.[sev]?.fg) || "#fff";
-              span.style.marginRight = "0.2rem";
-              span.textContent = `${level}: ${count}`;
-              severityDiv.appendChild(span);
-            }
-          }
-          banditCell.appendChild(severityDiv);
-        }
-      };
-    });
   });
-</script>
 
-<!-- Dodgy Real-Time WebSocket Updates -->
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    function mapStatusToBadge(status) {
-      switch (status) {
-        case "NOT_REQUESTED": return { text: "Not Requested", cls: "badge badge-idle" };
-        case "REQUESTED":     return { text: "Requested",     cls: "badge badge-info" };
-        case "PENDING":       return { text: "Pending",       cls: "badge badge-warn" };
-        case "COMPLETED":     return { text: "Completed",     cls: "badge badge-success" };
-        case "ERRORED":       return { text: "Errored",       cls: "badge badge-failed" };
-        default:              return { text: status,          cls: "badge badge-idle" };
-      }
-    }
+  /**
+   * Establish one WebSocket per file and set up message handling.
+   */
+  document.querySelectorAll("td code[title]").forEach(codeEl => {
+    const sha256 = codeEl.getAttribute("title");
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const socket = new WebSocket(`${protocol}://${window.location.host}/ws/analyzer/${sha256}/`);
 
-    // Normalize any pre-rendered badges (so refresh shows correct colors)
-    document.querySelectorAll('[id^="dodgy-badge-"]').forEach(badgeEl => {
-      const status = (badgeEl.textContent || "").trim().toUpperCase();
-      const { text, cls } = mapStatusToBadge(status);
+    /**
+     * Handle messages from the WebSocket server.
+     * Each message updates badge status, result links, and severity counts.
+     */
+    socket.onmessage = e => {
+      const data = JSON.parse(e.data);
+      if (!data.analyzer) return;
+
+      const analyzer = data.analyzer.toLowerCase();
+      const badgeEl = document.querySelector(`#${analyzer}-badge-${sha256}`);
+      if (!badgeEl) return;
+
+      const { text, cls } = mapStatusToBadge(data.status);
       badgeEl.textContent = text;
       badgeEl.className = cls;
-    });
 
-    document.querySelectorAll("td code[title]").forEach(codeEl => {
-      const sha256 = codeEl.getAttribute("title");
-      const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-      const socket = new WebSocket(`${protocol}://${window.location.host}/ws/analyzer/${sha256}/`);
+      // Log progress to console for debugging and visibility.
+      console.log(`[UPDATE] ${analyzer} status: ${data.status} @ ${data.timestamp || "unknown time"}`);
 
-      socket.onmessage = function (e) {
-        const data = JSON.parse(e.data);
-
-        // Only handle Dodgy messages
-        if (!data.analyzer || data.analyzer.toLowerCase() !== "dodgy") return;
-
-        const badgeEl = document.querySelector(`#dodgy-badge-${sha256}`);
-        if (!badgeEl) return;
-
-        // Timestamp guard: ignore stale or out-of-order updates
-        if (badgeEl.dataset.lastUpdate && badgeEl.dataset.lastUpdate > data.timestamp) {
-          console.debug("Ignoring stale update for", data.analyzer);
-          return;
+      // Update the Results column when a new update arrives.
+      const resultsTd = badgeEl.closest("td")?.nextElementSibling;
+      if (resultsTd && data.status) {
+        const runUrl = data.run_url || "";
+        if ((data.findings_count || 0) > 0 && runUrl) {
+          resultsTd.innerHTML = `<a class="link" href="${runUrl}" title="View ${analyzer} results">👁️</a>`;
+        } else if (data.status === "COMPLETED") {
+          resultsTd.innerHTML = `<span class="badge badge-success">No Findings</span>`;
+        } else {
+          resultsTd.innerHTML = `<span class="muted" title="No findings yet">–</span>`;
         }
-        badgeEl.dataset.lastUpdate = data.timestamp;
-
-        // 1) Update the Dodgy status badge consistently
-        const { text, cls } = mapStatusToBadge(data.status);
-        badgeEl.textContent = text;
-        badgeEl.className = cls;
-
-        // 2) Update the Dodgy Results cell (👁️ or "No Findings" or "–")
-        const resultsTd = badgeEl.closest("td")?.nextElementSibling;
-        if (resultsTd && data.status) {
-          const runUrl = data.run_url || "";
-          if ((data.findings_count || 0) > 0 && runUrl) {
-            resultsTd.innerHTML = `<a class="link" href="${runUrl}" title="View Dodgy results">👁️</a>`;
-          } else if (data.status === "COMPLETED") {
-            resultsTd.innerHTML = `<span class="badge badge-success">No Findings</span>`;
-          } else {
-            resultsTd.innerHTML = `<span class="muted" title="No findings yet">–</span>`;
-          }
-        }
-
-        // 3) Update (or create) the per-severity badges under the Dodgy cell itself
-        const dodgyCell = badgeEl.closest("td");
-        if (data.severity_counts && dodgyCell) {
-          const existingDiv = dodgyCell.querySelector(".dodgy-severity");
-          if (existingDiv) existingDiv.remove();
-
-          const severityDiv = document.createElement("div");
-          severityDiv.className = "dodgy-severity";
-          severityDiv.style.marginTop = "0.3rem";
-          severityDiv.style.fontSize = "0.8rem";
-
-          for (const [level, count] of Object.entries(data.severity_counts)) {
-            if (count > 0) {
-              const sev = level.toLowerCase();
-              const span = document.createElement("span");
-              span.className = "badge";
-              span.style.backgroundColor = (window.severityColors?.[sev]?.bg) || "#666";
-              span.style.color = (window.severityColors?.[sev]?.fg) || "#fff";
-              span.style.marginRight = "0.2rem";
-              span.textContent = `${level}: ${count}`;
-              severityDiv.appendChild(span);
-            }
-          }
-          dodgyCell.appendChild(severityDiv);
-        }
-      };
-    });
-  });
-</script>
-
-<!-- Mypy Real-Time WebSocket Updates -->
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    function mapStatusToBadge(status) {
-      switch (status) {
-        case "NOT_REQUESTED": return { text: "Not Requested", cls: "badge badge-idle" };
-        case "REQUESTED":     return { text: "Requested",     cls: "badge badge-info" };
-        case "PENDING":       return { text: "Pending",       cls: "badge badge-warn" };
-        case "COMPLETED":     return { text: "Completed",     cls: "badge badge-success" };
-        case "ERRORED":       return { text: "Errored",       cls: "badge badge-failed" };
-        default:              return { text: status,          cls: "badge badge-idle" };
       }
-    }
 
-    // Normalize any pre-rendered badges (so refresh shows correct colors)
-    document.querySelectorAll('[id^="mypy-badge-"]').forEach(badgeEl => {
-      const status = (badgeEl.textContent || "").trim().toUpperCase();
-      const { text, cls } = mapStatusToBadge(status);
-      badgeEl.textContent = text;
-      badgeEl.className = cls;
-    });
-
-    document.querySelectorAll("td code[title]").forEach(codeEl => {
-      const sha256 = codeEl.getAttribute("title");
-      const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-      const socket = new WebSocket(`${protocol}://${window.location.host}/ws/analyzer/${sha256}/`);
-
-      socket.onmessage = function (e) {
-        const data = JSON.parse(e.data);
-
-        // Only handle MyPy messages
-        if (!data.analyzer || data.analyzer.toLowerCase() !== "mypy") return;
-
-        const badgeEl = document.querySelector(`#mypy-badge-${sha256}`);
-        if (!badgeEl) return;
-
-        // Timestamp guard: ignore stale or out-of-order updates
-        if (badgeEl.dataset.lastUpdate && badgeEl.dataset.lastUpdate > data.timestamp) {
-          console.debug("Ignoring stale update for", data.analyzer);
-          return;
-        }
-        badgeEl.dataset.lastUpdate = data.timestamp;
-
-        // 1) Update the MyPy status badge consistently
-        const { text, cls } = mapStatusToBadge(data.status);
-        badgeEl.textContent = text;
-        badgeEl.className = cls;
-
-        // 2) Update the MyPy Results cell (👁️ or "No Findings" or "–")
-        const resultsTd = badgeEl.closest("td")?.nextElementSibling;
-        if (resultsTd && data.status) {
-          const runUrl = data.run_url || "";
-          if ((data.findings_count || 0) > 0 && runUrl) {
-            resultsTd.innerHTML = `<a class="link" href="${runUrl}" title="View MyPy results">👁️</a>`;
-          } else if (data.status === "COMPLETED") {
-            resultsTd.innerHTML = `<span class="badge badge-success">No Findings</span>`;
-          } else {
-            resultsTd.innerHTML = `<span class="muted" title="No findings yet">–</span>`;
+      // Update the severity counts shown below each badge.
+      const cell = badgeEl.closest("td");
+      if (data.severity_counts && cell) {
+        const existingDiv = cell.querySelector(`.${analyzer}-severity`);
+        if (existingDiv) existingDiv.remove();
+        const severityDiv = document.createElement("div");
+        severityDiv.className = `${analyzer}-severity`;
+        severityDiv.style.marginTop = "0.3rem";
+        severityDiv.style.fontSize = "0.8rem";
+        for (const [level, count] of Object.entries(data.severity_counts)) {
+          if (count > 0) {
+            const sev = level.toLowerCase();
+            const span = document.createElement("span");
+            span.className = "badge";
+            span.style.backgroundColor = (window.severityColors?.[sev]?.bg) || "#666";
+            span.style.color = (window.severityColors?.[sev]?.fg) || "#fff";
+            span.style.marginRight = "0.2rem";
+            span.textContent = `${level}: ${count}`;
+            severityDiv.appendChild(span);
           }
         }
-
-        // 3) Update (or create) the per-severity badges under the MyPy cell itself
-        const mypyCell = badgeEl.closest("td");
-        if (data.severity_counts && mypyCell) {
-          const existingDiv = mypyCell.querySelector(".mypy-severity");
-          if (existingDiv) existingDiv.remove();
-
-          const severityDiv = document.createElement("div");
-          severityDiv.className = "mypy-severity";
-          severityDiv.style.marginTop = "0.3rem";
-          severityDiv.style.fontSize = "0.8rem";
-
-          for (const [level, count] of Object.entries(data.severity_counts)) {
-            if (count > 0) {
-              const sev = level.toLowerCase();
-              const span = document.createElement("span");
-              span.className = "badge";
-              span.style.backgroundColor = (window.severityColors?.[sev]?.bg) || "#666";
-              span.style.color = (window.severityColors?.[sev]?.fg) || "#fff";
-              span.style.marginRight = "0.2rem";
-              span.textContent = `${level}: ${count}`;
-              severityDiv.appendChild(span);
-            }
-          }
-          mypyCell.appendChild(severityDiv);
-        }
-      };
-    });
-  });
-</script>
-
-<!-- Semgrep Real-Time WebSocket Updates -->
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    function mapStatusToBadge(status) {
-      switch (status) {
-        case "NOT_REQUESTED": return { text: "Not Requested", cls: "badge badge-idle" };
-        case "REQUESTED":     return { text: "Requested",     cls: "badge badge-info" };
-        case "PENDING":       return { text: "Pending",       cls: "badge badge-warn" };
-        case "COMPLETED":     return { text: "Completed",     cls: "badge badge-success" };
-        case "ERRORED":       return { text: "Errored",       cls: "badge badge-failed" };
-        default:              return { text: status,          cls: "badge badge-idle" };
+        cell.appendChild(severityDiv);
       }
-    }
+    };
 
-    // Normalize any pre-rendered badges (so refresh shows correct colors)
-    document.querySelectorAll('[id^="semgrep-badge-"]').forEach(badgeEl => {
-      const status = (badgeEl.dataset.status || badgeEl.textContent || "").trim().toUpperCase();
-      const { text, cls } = mapStatusToBadge(status);
-      badgeEl.textContent = text;
-      badgeEl.className = cls;
-    });
-
-    // Open a web socket per row using file SHA in first column
-    document.querySelectorAll("td code[title]").forEach(codeEl => {
-      const sha256 = codeEl.getAttribute("title");
-      const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-      const socket = new WebSocket(`${protocol}://${window.location.host}/ws/analyzer/${sha256}/`);
-
-      socket.onmessage = function (e) {
-        const data = JSON.parse(e.data);
-
-        // Only handle Semgrep messages
-        if (!data.analyzer || data.analyzer.toLowerCase() !== "semgrep") return;
-
-        const badgeEl = document.querySelector(`#semgrep-badge-${sha256}`);
-        if (!badgeEl) return;
-
-        // Timestamp guard: ignore stale or out-of-order updates
-        if (badgeEl.dataset.lastUpdate && badgeEl.dataset.lastUpdate > data.timestamp) {
-          console.debug("Ignoring stale update for", data.analyzer);
-          return;
-        }
-        badgeEl.dataset.lastUpdate = data.timestamp;
-
-        // 1) Update the Semgrep status badge consistently
-        const { text, cls } = mapStatusToBadge(data.status);
-        badgeEl.textContent = text;
-        badgeEl.className = cls;
-
-        // 2) Update the Semgrep Results cell (👁️ or "No Findings" or "–")
-        const resultsTd = badgeEl.closest("td")?.nextElementSibling;
-        if (resultsTd && data.status) {
-          const runUrl = data.run_url || "";
-          if ((data.findings_count || 0) > 0 && runUrl) {
-            resultsTd.innerHTML = `<a class="link" href="${runUrl}" title="View Semgrep results">👁️</a>`;
-          } else if (data.status === "COMPLETED") {
-            resultsTd.innerHTML = `<span class="badge badge-success">No Findings</span>`;
-          } else {
-            resultsTd.innerHTML = `<span class="muted" title="No findings yet">–</span>`;
-          }
-        }
-
-        // 3) Update (or create) the per-severity badges under the Semgrep cell itself
-        const semgrepCell = badgeEl.closest("td");
-        if (data.severity_counts && semgrepCell) {
-          // Remove any existing severity block just below the badge
-          const existingDiv = semgrepCell.querySelector(".semgrep-severity");
-          if (existingDiv) existingDiv.remove();
-
-          const severityDiv = document.createElement("div");
-          severityDiv.className = "semgrep-severity";
-          severityDiv.style.marginTop = "0.3rem";
-          severityDiv.style.fontSize = "0.8rem";
-
-          for (const [level, count] of Object.entries(data.severity_counts)) {
-            if (count > 0) {
-              const sev = level.toLowerCase();
-              const span = document.createElement("span");
-              span.className = "badge";
-              span.style.backgroundColor = (window.severityColors?.[sev]?.bg) || "#666";
-              span.style.color = (window.severityColors?.[sev]?.fg) || "#fff";
-              span.style.marginRight = "0.2rem";
-              span.textContent = `${level}: ${count}`;
-              severityDiv.appendChild(span);
-            }
-          }
-
-          semgrepCell.appendChild(severityDiv);
-        }
-      };
-
-      socket.onclose = () => { /* silent close is fine for page navigation */ };
-    });
+    /**
+     * Handle socket closure events.
+     */
+    socket.onclose = () => {
+      console.info(`Socket closed for ${sha256}.`);
+    };
   });
-</script>
-
-<!-- Vulture Real-Time WebSocket Updates -->
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    function mapStatusToBadge(status) {
-      switch (status) {
-        case "NOT_REQUESTED": return { text: "Not Requested", cls: "badge badge-idle" };
-        case "REQUESTED":     return { text: "Requested",     cls: "badge badge-info" };
-        case "PENDING":       return { text: "Pending",       cls: "badge badge-warn" };
-        case "COMPLETED":     return { text: "Completed",     cls: "badge badge-success" };
-        case "ERRORED":       return { text: "Errored",       cls: "badge badge-failed" };
-        default:              return { text: status,          cls: "badge badge-idle" };
-      }
-    }
-
-    // Normalize any pre-rendered badges (so refresh shows correct colors)
-    document.querySelectorAll('[id^="vulture-badge-"]').forEach(badgeEl => {
-      const status = (badgeEl.textContent || "").trim().toUpperCase();
-      const { text, cls } = mapStatusToBadge(status);
-      badgeEl.textContent = text;
-      badgeEl.className = cls;
-    });
-
-    document.querySelectorAll("td code[title]").forEach(codeEl => {
-      const sha256 = codeEl.getAttribute("title");
-      const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-      const socket = new WebSocket(`${protocol}://${window.location.host}/ws/analyzer/${sha256}/`);
-
-      socket.onmessage = function (e) {
-        const data = JSON.parse(e.data);
-
-        // Only handle Vulture messages
-        if (!data.analyzer || data.analyzer.toLowerCase() !== "vulture") return;
-
-        const badgeEl = document.querySelector(`#vulture-badge-${sha256}`);
-        if (!badgeEl) return;
-
-        // Timestamp guard: ignore stale or out-of-order updates
-        if (badgeEl.dataset.lastUpdate && badgeEl.dataset.lastUpdate > data.timestamp) {
-          console.debug("Ignoring stale update for", data.analyzer);
-          return;
-        }
-        badgeEl.dataset.lastUpdate = data.timestamp;
-
-        // 1) Update the Vulture status badge consistently
-        const { text, cls } = mapStatusToBadge(data.status);
-        badgeEl.textContent = text;
-        badgeEl.className = cls;
-
-        // 2) Update the Vulture Results cell (👁️ or "No Findings" or "–")
-        const resultsTd = badgeEl.closest("td")?.nextElementSibling;
-        if (resultsTd && data.status) {
-          const runUrl = data.run_url || "";
-          if ((data.findings_count || 0) > 0 && runUrl) {
-            resultsTd.innerHTML = `<a class="link" href="${runUrl}" title="View Vulture results">👁️</a>`;
-          } else if (data.status === "COMPLETED") {
-            resultsTd.innerHTML = `<span class="badge badge-success">No Findings</span>`;
-          } else {
-            resultsTd.innerHTML = `<span class="muted" title="No findings yet">–</span>`;
-          }
-        }
-
-        // 3) Update (or create) the per-severity badges under the Vulture cell itself
-        const vultureCell = badgeEl.closest("td");
-        if (data.severity_counts && vultureCell) {
-          const existingDiv = vultureCell.querySelector(".vulture-severity");
-          if (existingDiv) existingDiv.remove();
-
-          const severityDiv = document.createElement("div");
-          severityDiv.className = "vulture-severity";
-          severityDiv.style.marginTop = "0.3rem";
-          severityDiv.style.fontSize = "0.8rem";
-
-          for (const [level, count] of Object.entries(data.severity_counts)) {
-            if (count > 0) {
-              const sev = level.toLowerCase();
-              const span = document.createElement("span");
-              span.className = "badge";
-              span.style.backgroundColor = (window.severityColors?.[sev]?.bg) || "#666";
-              span.style.color = (window.severityColors?.[sev]?.fg) || "#fff";
-              span.style.marginRight = "0.2rem";
-              span.textContent = `${level}: ${count}`;
-              severityDiv.appendChild(span);
-            }
-          }
-          vultureCell.appendChild(severityDiv);
-        }
-      };
-    });
-  });
+});
 </script>
 
 <!-- Modal styles: shared by reanalyze + delete -->

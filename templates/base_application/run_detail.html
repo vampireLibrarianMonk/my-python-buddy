@@ -76,7 +76,8 @@
                 case "severity":
                   // Custom severity order
                   const order = ["critical", "high", "medium", "low", "info", "warning", "dodgy"];
-                  return order.indexOf(row.dataset.severity || "") || 99;
+                  const idx = order.indexOf(row.dataset.severity || "");
+                  return idx === -1 ? 99 : idx;
                 case "rule":
                   return row.cells[1].innerText.trim().toLowerCase();
                 case "message":

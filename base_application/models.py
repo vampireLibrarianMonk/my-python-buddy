@@ -90,6 +90,8 @@ def severity_color_map():
         "info": {"bg": "#42a5f5", "fg": "#ffffff"},  # Light blue info
         "warning": {"bg": "#FFC107", "fg": "#000000"},  # Amber
         "error": {"bg": "#D32F2F", "fg": "#ffffff"},  # Deep Red
+        # Dodgy
+        "dodgy": {"bg": "#444444", "fg": "#ffffff"},  # Dark Gray for Dodgy
     }
 
 
