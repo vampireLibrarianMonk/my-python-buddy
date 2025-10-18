@@ -33,7 +33,7 @@ def run_analyzer_task(run_id, analyzer):
     Or if the execution is too quick the status doesn't have a chance to update.
     """
     # Random stagger between 300–600 milliseconds (cryptographically safe)
-    time.sleep(secrets.SystemRandom().uniform(0.3, 0.5))
+    time.sleep(secrets.SystemRandom().uniform(0.3, 0.6))
 
     run = Run.objects.get(id=run_id)
     run.status = "PENDING"

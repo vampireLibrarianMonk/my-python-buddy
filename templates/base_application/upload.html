@@ -95,7 +95,7 @@
                       {{ bandit_run.status|title }}
                     </span>
                     {% if bandit_run.severity_counts %}
-                    <div style="margin-top:0.3rem; font-size:0.8rem;">
+                    <div class="bandit-severity" style="margin-top:0.3rem; font-size:0.8rem;">
                         {% for level, count in bandit_run.severity_counts.items %}
                         {% if count > 0 %}
                         {% with sev=level|lower %}
@@ -141,7 +141,7 @@
                     </span>
 
                     {% if dodgy_run.severity_counts %}
-                    <div style="margin-top:0.3rem; font-size:0.8rem;">
+                    <div class="dodgy-severity" style="margin-top:0.3rem; font-size:0.8rem;">
                         {% for level, count in dodgy_run.severity_counts.items %}
                         {% if count > 0 %}
                         {% with sev=level|lower %}
@@ -188,7 +188,7 @@
                   </span>
 
                     {% if mypy_run.severity_counts %}
-                    <div style="margin-top:0.3rem; font-size:0.8rem;">
+                    <div class="mypy-severity" style="margin-top:0.3rem; font-size:0.8rem;">
                         {% for level, count in mypy_run.severity_counts.items %}
                         {% if count > 0 %}
                         {% with sev=level|lower %}
@@ -237,7 +237,7 @@
                     </span>
 
                     {% if semgrep_run.severity_counts %}
-                    <div style="margin-top:0.3rem; font-size:0.8rem;">
+                    <div class="semgrep-severity" style="margin-top:0.3rem; font-size:0.8rem;">
                         {% for level, count in semgrep_run.severity_counts.items %}
                         {% if count > 0 %}
                         {% with sev=level|lower %}
@@ -283,7 +283,7 @@
                   </span>
 
                     {% if vulture_run.severity_counts %}
-                    <div style="margin-top:0.3rem; font-size:0.8rem;">
+                    <div class="vulture-severity" style="margin-top:0.3rem; font-size:0.8rem;">
                         {% for level, count in vulture_run.severity_counts.items %}
                         {% if count > 0 %}
                         {% with sev=level|lower %}

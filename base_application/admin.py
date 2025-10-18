@@ -27,6 +27,7 @@ class SubmittedFileAdmin(admin.ModelAdmin):
 
 # Inline display of findings under each analyzer run
 class FindingInline(admin.TabularInline):
+    can_delete = False  # Findings are not deleted, previous behavior would also delete the associated Run.
     model = Finding
     extra = 0
     fields = (
