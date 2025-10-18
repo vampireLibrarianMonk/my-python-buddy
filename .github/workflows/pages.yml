@@ -54,3 +54,7 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Announce coverage report
+        run: |
+          echo "### [View Coverage Report → ${{ steps.deployment.outputs.page_url }}code_coverage_report/index.html](${{ steps.deployment.outputs.page_url }}code_coverage_report/index.html)" >> $GITHUB_STEP_SUMMARY
