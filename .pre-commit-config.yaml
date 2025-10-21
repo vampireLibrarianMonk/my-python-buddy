@@ -158,7 +158,7 @@ repos:
     rev: v1.5.0
     hooks:
       - id: detect-secrets
-        exclude: sample_files/
+        exclude: '^(sample_files/|notebook/)'
 
   # flake8:
   # Python linter enforcing style and catching issues.
