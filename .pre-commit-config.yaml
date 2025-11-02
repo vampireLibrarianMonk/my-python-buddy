@@ -34,10 +34,12 @@ repos:
     rev: "24.4.2"
     hooks:
       - id: black
+        exclude: 'notebook/raw_python/fine_tuning_model_pynb\.py'
       - id: black-jupyter
         entry: black
         require_serial: true
         types_or: [python, pyi, jupyter]
+        exclude: 'notebook/raw_python/fine_tuning_model_pynb\.py'
 
   # codespell:
   # Catches common spelling errors in comments, docstrings, etc.
@@ -81,10 +83,16 @@ repos:
     hooks:
       - id: prettier
         files: .*\.(ya?ml|json|md)$
-        exclude: (?x)^(
-          .pre-commit-config.yaml|
-          mkdocs.yml|
-          .*.py
+        exclude: |
+          (?x)^(
+            \.pre-commit-config\.yaml|
+            mkdocs\.yml|
+            .*\.pynb\.py|
+            .*\.ipynb|
+            .*\.pyc|
+            \.venv|
+            build|
+            dist
           )$
 
   # pre-commit-hooks:
@@ -173,4 +181,8 @@ repos:
       - id: flake8
         entry: pflake8
         additional_dependencies: [pyproject-flake8]
-        exclude: sample_files/
+        exclude: |
+          (?x)^(
+            sample_files/|
+            notebook/raw_python/fine_tuning_model_pynb\.py
+          )$
