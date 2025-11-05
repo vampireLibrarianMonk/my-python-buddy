@@ -154,7 +154,8 @@ repos:
         args: ["-x",
                "tests,sample_files",
                "--exclude",
-               "base_application/templatetags/custom_tags.py"
+               "base_application/templatetags/custom_tags.py",
+               "notebook"
         ]
 
   # detect-secrets:
@@ -183,6 +184,7 @@ repos:
         additional_dependencies: [pyproject-flake8]
         exclude: |
           (?x)^(
-            sample_files/|
-            notebook/raw_python/fine_tuning_model_pynb\.py
+            sample_files/.*|
+            notebook/.*|
+            notebook/raw_python/.*|
           )$
