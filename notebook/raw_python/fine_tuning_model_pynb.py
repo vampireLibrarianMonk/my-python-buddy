@@ -36,7 +36,7 @@ print(f"transformers   : {transformers.__version__}")
 print(f"trl            : {trl.__version__}")
 print(f"mistral-common : {mistral_common.__version__}")
 
-!pip3 install torch==2.8.0+cu124 --index-url https://download.pytorch.org/whl/cu124
+!pip3 install torch==2.8.0+cu126 --index-url https://download.pytorch.org/whl/cu126
 
 # Verify PyTorch and CUDA versions for compatibility with the training setup.
 # Used in latest run.
@@ -84,6 +84,9 @@ from pathlib import Path
 # Web based actions library
 import requests
 
+# Hugging face dataseets library
+from datasets import load_dataset
+
 # Google drive mounting capability
 from google.colab import drive
 
@@ -123,16 +126,6 @@ def compute_sha256(file_path, block_size=65536):
             sha256.update(chunk)
     return sha256.hexdigest()
 
-# Download a file with streaming to avoid memory overload.
-def download_file(url, dest):
-    print(f"[INFO] Downloading {url}")
-    with requests.get(url, stream=True) as r:
-        r.raise_for_status()
-        with open(dest, "wb") as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                f.write(chunk)
-    print(f"[INFO] Download complete: {dest}")
-
 """# 6. Mount Google Drive"""
 
 drive.mount("/content/drive", force_remount=True)
@@ -170,7 +163,7 @@ login(hugging_face_key)
 """# 10. Dataset for fine-tuning"""
 
 # set choice either for 14k or 143k
-dataset_choice = "143k"
+dataset_choice = "14k"
 
 # Dataset for fine-tuning
 if dataset_choice == "14k":
@@ -691,18 +684,20 @@ print(out[0]["generated_text"])
 """# 23. Configure Llama CPP"""
 
 REPO = "/content/llama.cpp"
+URL = "https://github.com/ggml-org/llama.cpp.git"
 
-if not Path(REPO).exists():
-    print(f"[INFO] Cloning llama.cpp into {REPO}")
-    subprocess.run([
-        "git", "clone", "--depth", "1",
-        "https://github.com/ggerganov/llama.cpp.git",
-        REPO
-    ], check=True)
+if Path(REPO).exists() and (Path(REPO) / ".git").exists():
+    try:
+        print(f"[INFO] Updating existing llama.cpp repo")
+        subprocess.run(["git", "-C", REPO, "fetch", "--depth", "1", "origin", "HEAD"], check=True)
+        subprocess.run(["git", "-C", REPO, "reset", "--hard", "FETCH_HEAD"], check=True)
+    except subprocess.CalledProcessError:
+        print("[WARN] Update failed, recloning repository...")
+        subprocess.run(["rm", "-rf", REPO])
+        subprocess.run(["git", "clone", "--depth", "1", URL, REPO], check=True)
 else:
-    print(f"[INFO] Updating existing llama.cpp repo")
-    subprocess.run(["git", "-C", REPO, "fetch", "--depth", "1", "origin", "main"], check=True)
-    subprocess.run(["git", "-C", REPO, "reset", "--hard", "origin/main"], check=True)
+    print(f"[INFO] Cloning llama.cpp into {REPO}")
+    subprocess.run(["git", "clone", "--depth", "1", URL, REPO], check=True)
 
 """# 24. Build Llama-cpp (with all available cores)"""
 
@@ -724,7 +719,7 @@ cmake --build . --config Release -j$(nproc)
 """# 26. Quantize and Export the Model and Conversion Metadata"""
 
 # This script runs the llama.cpp quantizer to convert a full-precision GGUF model (F16)
-# into a smaller quantized version (Q4), reducing model size and improving inference speed.
+# into a smaller quantized version, reducing model size and improving inference speed.
 #
 # Quantization helps deploy large models on lower-resource hardware by lowering
 # weight precision (e.g., from 16-bit floats to 4-bit integers).
@@ -732,28 +727,39 @@ cmake --build . --config Release -j$(nproc)
 # Common quantization levels:
 # - q8_0    → 8-bit (highest accuracy, largest size)
 # - q5_K    → 5-bit hybrid (good balance between size & quality)
-# - q4_K_M  → 4-bit modern (fastest with good accuracy) (CURRENT)
+# - q4_K_M  → 4-bit modern (fastest with good accuracy)
 # - q4_0    → 4-bit legacy (smallest, but least accurate)
 #
-# This example uses q4_K_M, the most widely used default for llama.cpp models.
+# q5_K seems to be the more coherent one
+# https://symbl.ai/developers/blog/a-guide-to-quantization-in-llms/
+# https://www.reddit.com/r/LocalLLaMA/comments/18q5uej/what_quantization_level_do_you_use/
+# https://www.reddit.com/r/LocalLLaMA/comments/1efttb1/could_someone_please_explain_the_naming_scheme/
+
+# Quantization chosen
+CHOSEN_QUANT = "q5_K"
+os.environ["CHOSEN_QUANT"] = CHOSEN_QUANT
+
+# Assemble file name
 os.environ["MAIN_FILE_NAME"] = f"llama-2-{model_choice}-{dataset_choice}-codeAlpaca-{timestamp}"
+
+# GGUF file path
+GGUF_FILE_PATH = f"/content/model-{CHOSEN_QUANT}.gguf"
+os.environ["GGUF_FILE_PATH"] = GGUF_FILE_PATH
 
 # Commented out IPython magic to ensure Python compatibility.
 # %%bash
 # # Paths to the input full-precision model and output quantized model
-# CHOSEN_QUANT="q4_K_M"
 # F16_GGUF_PATH="/content/model-f16.gguf"
-# Q4_GGUF_PATH="/content/model-${CHOSEN_QUANT}.gguf"
 # LOG_FILE="/content/quantization_${MAIN_FILE_NAME}.log"
 #
 # echo "===== LLaMA.cpp Quantization Log =====" | tee "$LOG_FILE"
 # echo "Timestamp: $(date)" | tee -a "$LOG_FILE"
 # echo "Input Model: $F16_GGUF_PATH" | tee -a "$LOG_FILE"
-# echo "Output Model: $Q4_GGUF_PATH" | tee -a "$LOG_FILE"
+# echo "Output Model: $GGUF_FILE_PATH" | tee -a "$LOG_FILE"
 # echo "Quantization Level: $CHOSEN_QUANT" | tee -a "$LOG_FILE"
 # echo | tee -a "$LOG_FILE"
 #
-# /content/llama.cpp/build/bin/llama-quantize "$F16_GGUF_PATH" "$Q4_GGUF_PATH" "$CHOSEN_QUANT" 2>&1 | tee -a "$LOG_FILE"
+# /content/llama.cpp/build/bin/llama-quantize "$F16_GGUF_PATH" "$GGUF_FILE_PATH" "$CHOSEN_QUANT" 2>&1 | tee -a "$LOG_FILE"
 #
 # echo | tee -a "$LOG_FILE"
 # echo "Quantization Completed: $(date)" | tee -a "$LOG_FILE"
@@ -764,7 +770,7 @@ os.environ["MAIN_FILE_NAME"] = f"llama-2-{model_choice}-{dataset_choice}-codeAlp
 
 """# 27. Hash file of GGUF Model, export to Google Drive"""
 
-gguf_model_hash = compute_sha256(merged_zip_path)
+gguf_model_hash = compute_sha256(GGUF_FILE_PATH)
 print(f"[INFO] SHA-256 hash of gguf model: {gguf_model_hash}")
 
 # Save the hash to a text file
@@ -789,25 +795,46 @@ print(f"[INFO] SHA-256 hash uploaded to Google Drive: {drive_gguf_hash_path}")
 model_base_name = f"llama-2-{model_choice}-{dataset_choice}-codeAlpaca"
 new_model_name = f"{model_base_name}-{CHOSEN_QUANT}-{timestamp}.gguf"
 new_model_log = f"{model_base_name}-{CHOSEN_QUANT}-{timestamp}.log"
+quant_log_file_path = f"/content/quantization_llama-2-{model_choice}-{dataset_choice}-codeAlpaca-{timestamp}.log"
 
 # Full path inside Google Drive
 drive_model_path = os.path.join(drive_save_dir, new_model_name)
 drive_log_path = os.path.join(drive_save_dir, new_model_log)
 
 # Copy quantized GGUF to Drive
-shutil.copy(Q4_GGUF_PATH, drive_model_path)
-shutil.copy("/content/quantization.log", drive_log_path)
+shutil.copy(GGUF_FILE_PATH, drive_model_path)
+shutil.copy(quant_log_file_path, drive_log_path)
 
 print(f"[INFO] Model saved to Google Drive: {drive_model_path}")
+print(f"[INFO] Quantization log saved to Google Drive: {drive_log_path}")
+
+# Add timestamp and quantization tag to filename
+model_base_name = f"llama-2-{model_choice}-{dataset_choice}-codeAlpaca"
+new_model_name = f"{model_base_name}-{CHOSEN_QUANT}-{timestamp}.gguf"
+new_model_log = f"{model_base_name}-{CHOSEN_QUANT}-{timestamp}.log"
+quant_log_file_path = f"/content/quantization_llama-2-{model_choice}-{dataset_choice}-codeAlpaca-{timestamp}.log"
+
+# Full path inside Google Drive
+drive_model_path = os.path.join(drive_save_dir, new_model_name)
+drive_log_path = os.path.join(drive_save_dir, new_model_log)
+
+# Copy quantized GGUF to Drive
+shutil.copy(GGUF_FILE_PATH, drive_model_path)
+shutil.copy(quant_log_file_path, drive_log_path)
+
+print(f"[INFO] Model saved to Google Drive: {drive_model_path}")
+print(f"[INFO] Quantization log saved to Google Drive: {drive_log_path}")
+
+
 
 """# 29. User Download (uncomment if desired)"""
 
 # # Offer model download in Colab or report file path
 # try:
 #     from google.colab import files
-#     files.download(Q4_GGUF_PATH)
+#     files.download(GGUF_FILE_PATH)
 # except Exception:
-#     print("[INFO] Non-Colab environment; GGUF at:", Q4_GGUF_PATH)
+#     print("[INFO] Non-Colab environment; GGUF at:", GGUF_FILE_PATH)
 
 """# 30. Install, configure and check llama-cpp-python"""
 
@@ -820,6 +847,7 @@ import llama_cpp
 print("llama-cpp-python:", llama_cpp.__version__)
 
 # Import llama.cpp core library interface
+from llama_cpp import Llama
 from llama_cpp import llama_cpp as CLI
 
 # Retrieve system and build information from llama.cpp
@@ -840,20 +868,22 @@ print(info)
 
 """# 31. Verify Hash of GGUF and print"""
 
+!ls -l /content/tmp/
+
 print("[INFO] Downloading model and hash from Google Drive...")
 
-os.makedirs("/content/tmp", exists_ok=True)
+os.makedirs("/content/tmp", exist_ok=True)
 model_path = f"/content/tmp/{timestamp}-gguf-model-to-check.gguf"
 hash_path = f"/content/tmp/{timestamp}-gguf-model-hash-to-check.txt"
 
-download_file(drive_model_path, model_path)
-download_file(drive_gguf_hash_path, hash_path)
+shutil.copy(drive_model_path, model_path)
+shutil.copy(drive_gguf_hash_path, hash_path)
 
 # Verify hash
 with open(hash_path, "r") as f:
     expected_hash = f.read().strip().split()[0]
 
-calculated_hash = calculate_sha256(model_path)
+calculated_hash = compute_sha256(model_path)
 if calculated_hash != expected_hash:
     raise ValueError(f"[ERROR] Hash mismatch!\nExpected: {expected_hash}\nGot:      {calculated_hash}")
 print(f"[INFO] Model hash verified ({calculated_hash[:12]}...)")
@@ -865,6 +895,8 @@ llm = Llama(model_path=str(model_path), vocab_only=True, verbose=False)
 print("[INFO] GGUF Metadata:")
 for k, v in llm.metadata.items():
     print(f"{k} = {v}")
+
+!ls -l /content/drive/MyDrive/models
 
 """# 32. Check the quantized GGUF model with a sample prompt:"""
 
