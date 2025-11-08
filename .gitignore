@@ -21,3 +21,12 @@ media/
 
 # Code Coverage
 .coverage
+
+# IPython Checkpoints
+notebook/.ipynb_checkpoints
+
+# Logs
+logs/
+
+# Models
+!models/.gitkeep
