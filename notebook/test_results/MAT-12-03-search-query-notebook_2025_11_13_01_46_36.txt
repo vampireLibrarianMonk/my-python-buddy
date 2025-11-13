@@ -1,0 +1,149 @@
+
+Question 1: What is a secure alternative to the python pickle module?
+Cleaned Response:
+A secure alternative to the python Pickle module is JSON.
+
+It is a lightweight data interchange format that is easy for humans to read and write, and for machines to parse and generate.
+
+It is a text format that uses human-readable characters, and it is based on a subset of the JavaScript Object Notation (JSON) data format.
+
+JSON is a standard for data exchange between web servers and web browsers, and it is simple enough for humans to read and generate.
+
+It is also fast, compact, and easy for machines to parse and produce.
+
+Source(s):
+  1.  Python Pickle Risks and Safer Serialization Alternatives | ArjanCodes;  (https://www.arjancodes.com/blog/python-pickle-module-security-risks-and-safer-alternatives/)
+  2.  pickle — Python object serialization;  (https://docs.python.org/3/library/pickle.html)
+  3.  Insecure Deserialization in Python | Semgrep;  (https://semgrep.dev/docs/learn/vulnerabilities/insecure-deserialization/python)
+  4.  larch-pickle - Python Package Health Analysis | Snyk;  (https://snyk.io/advisor/python/larch-pickle)
+  5.  3.12 cPickle -- Alternate implementation of pickle;  (https://docs.python.org/2.0/lib/module-cPickle.html)
+Prompt Tokens: 702
+Max New Tokens: 300
+Time Taken: 68.83 seconds
+Is result correct? If not, one sentence as to why: Yes.
+
+----------------------------------------------------------------------------------------
+
+Question 2: What are the security implications for the subprocess module?
+Cleaned Response:
+The subprocess module in Python can be used to execute shell commands, but it's important to use it securely to avoid command injection vulnerabilities.
+
+When not used securely, it can lead to arbitrary command execution, which is a serious security flaw.
+
+Therefore, it's recommended to avoid using shell=True in cases where the command contains unsanitized input.
+
+Additionally, it's important to sanitize any user-controlled inputs to prevent variable, glob patterns, and special shell features from being processed before the command is executed.
+
+Source(s):
+  1.  subprocess — Subprocess management;  (https://docs.python.org/3/library/subprocess.html)
+  2.  Command injection in Python: examples and prevention | Snyk;  (https://snyk.io/blog/command-injection-python-prevention-examples/)
+  3.  17.1. subprocess — Subprocess management — Python v2.7.3 documentation;  (https://docs.python.org/release/2.7.3/library/subprocess.html)
+  4.  Command Injection in Python | Semgrep;  (https://semgrep.dev/docs/cheat-sheets/python-command-injection)
+  5.  subprocess.run - Python Package Health Analysis | Snyk;  (https://snyk.io/advisor/python/subprocess-run)
+Prompt Tokens: 607
+Max New Tokens: 300
+Time Taken: 70.45 seconds
+Is result correct? If not, one sentence as to why: Yes.
+
+----------------------------------------------------------------------------------------
+
+Question 3: How should I mitigate 'subprocess call with shell=True identified'?
+Cleaned Response:
+The best way to mitigate'subprocessing call with shell=True' is to sanitize all inputs to prevent any potential shell injection attacks.
+
+This can be done by using the `subprocess.check_call` function with the `shell=False` argument, which will execute the command directly without passing it through the shell.
+
+Additionally, you should use the `subprocess.Popen` function instead of `subprocess.check-call`, which allows you to specify the shell argument as a string, allowing you to control the shell environment.
+
+Here is an example of how you could modify your code to use these safer methods: ```python
+import subprocess def check_call(command, shell=False): if shell: return subprocess.check_output(command, shell=True) else: return subprocessor.check_call(command, stdout=subprocess.PIPE, stderr=subprocess.PIPED, shell=False) def main(): print(check_call('ls -l', shell = True)) print(check.call('ls -l')) if __name__ == "__main__": main()
+``` In this example, `check_call` is used to execute the command with the `shell=True` argument, which is then printed out.
+
+However, `check
+
+Source(s):
+  1.  B602: subprocess_popen_with_shell_equals_true — Bandit documentation;  (https://bandit.readthedocs.io/en/latest/plugins/b602_subprocess_popen_with_shell_equals_true.html)
+  2.  bandit.plugins.injection_shell — Bandit documentation;  (https://bandit.readthedocs.io/en/1.5.1/_modules/bandit/plugins/injection_shell.html)
+  3.  subprocess — Subprocess management;  (https://docs.python.org/3/library/subprocess.html)
+  4.  Command Injection in Python | Semgrep;  (https://semgrep.dev/docs/cheat-sheets/python-command-injection)
+  5.  Bandit Documentation PyCQA Sep 20, 2023;  (https://bandit.readthedocs.io/_/downloads/en/1.7.2/pdf/)
+Prompt Tokens: 1018
+Max New Tokens: 300
+Time Taken: 182.63 seconds
+Is result correct? If not, one sentence as to why: No. Conflicting statements. Could have been right with shell=False.
+
+----------------------------------------------------------------------------------------
+
+Question 4: What is a secure hashing algorithm to use instead of md5?
+Cleaned Response:
+A secure hashing algorithm to replace MD5 is SHA-254 or SHA-384.
+
+These are more secure than MD5 and are widely used in cryptographic applications.
+
+Source(s):
+  1.  What is an insecure hash? | Tutorial & examples | Snyk Learn;  (https://learn.snyk.io/lesson/insecure-hash/)
+  2.  Python 3.14 documentation;  (https://docs.python.org/3/library/sha.html)
+  3.  Password Storage - OWASP Cheat Sheet Series;  (https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
+  4.  Find Weak Cryptographic Algorithms: Bye Bye MD5 | Testing for Weak Cryptography with Snyk | Snyk;  (https://snyk.io/blog/can-snyk-find-weak-cryptographic-algorithms-bye-bye-md5/)
+  5.  hashlib — Secure hashes and message digests;  (https://docs.python.org/3/library/hashlib.html)
+Prompt Tokens: 730
+Max New Tokens: 300
+Time Taken: 25.61 seconds
+Is result correct? If not, one sentence as to why: No. There is no SHA-254.
+
+----------------------------------------------------------------------------------------
+
+Question 5: What are common hardcoded secret patterns detected by Dodgy in Python?
+Cleaned Response:
+The following are common hardcoded secret pattern detected by Dodgy: 1.
+
+API keys and other credentials stored in plain text files or configuration files.
+2.
+
+Secrets stored in databases without encryption.
+3.
+
+Insufficient secretes rotation.
+4.
+
+Hardcoding secrets in code.
+5.
+
+Using hardcoded secrets in functions or methods.
+6.
+
+Storing secrets in environment variables.
+7.
+
+Using hardcoded secretes in configuration files.
+8.
+
+Storing secrets as part of the build process.
+9.
+
+Using hardcoded secreets in deployment scripts.
+10.
+
+Storing secrets on the server.
+
+These patterns are often used by attackers to gain unauthorized access to systems and data.
+
+It is important to detect and prevent these patterns in order to maintain the security of systems and data.
+
+Source(s):
+  1.  Hardcoded secrets | Tutorial and examples | Snyk Learn;  (https://learn.snyk.io/lesson/hardcoded-secrets/)
+  2.  Want to avoid a data breach? Employ secrets detection - SEO | Snyk;  (https://snyk.io/blog/want-to-avoid-data-breach-employ-secrets-detection/)
+  3.  detect-secrets - Python Package Health Analysis | Snyk;  (https://snyk.io/advisor/python/detect-secrets)
+  4.  Avoiding Secret Leaks in Python Projects | ArjanCodes;  (https://arjancodes.com/blog/how-to-prevent-secrets-leakage-in-your-python-projects/)
+  5.  Semgrep;  (https://semgrep.dev/p/secrets)
+Prompt Tokens: 677
+Max New Tokens: 300
+Time Taken: 106.24 seconds
+Is result correct? If not, one sentence as to why: Yes but will one typo.
+
+----------------------------------------------------------------------------------------
+
+Execution Time Summary:
+Lowest Time:  25.61 seconds
+Highest Time: 182.63 seconds
+Average Time: 90.75 seconds
