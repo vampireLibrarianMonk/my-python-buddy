@@ -4,7 +4,7 @@
 # Django
 from django.contrib import admin
 
-from .models import Finding, Run, SubmittedFile
+from .models import ChatSession, Finding, Run, SubmittedFile
 
 
 # Inline display of analyzer runs under submitted files
@@ -53,10 +53,50 @@ class FindingInline(admin.TabularInline):
     show_change_link = True
 
 
+# Inline display of chat sessions under each analyzer run
+class ChatSessionInline(admin.TabularInline):
+    model = ChatSession
+    extra = 0
+    fields = (
+        "chat_type",
+        "prompt",
+        "response",
+        "created_at",
+    )
+    readonly_fields = (
+        "chat_type",
+        "prompt",
+        "response",
+        "created_at",
+    )
+    show_change_link = False
+
+
+# Admin view for ChatSession entries
+@admin.register(ChatSession)
+class ChatSessionAdmin(admin.ModelAdmin):
+    list_display = (
+        "chat_type",
+        "analyzer",
+        "file_name",
+        "file_hash",
+        "created_at",
+    )
+    search_fields = (
+        "file_name",
+        "file_hash",
+        "analyzer",
+        "prompt",
+        "response",
+    )
+    list_filter = ("chat_type", "analyzer", "created_at")
+    ordering = ("-created_at",)
+
+
 # Admin view configuration for analyzer run details
 @admin.register(Run)
 class RunAdmin(admin.ModelAdmin):
     list_display = ("id", "submitted_file", "analyzer", "status", "started_at", "completed_at", "findings_count")
     search_fields = ("submitted_file__saved_name", "submitted_file__sha256", "analyzer")
     list_filter = ("analyzer", "status", "started_at", "completed_at")
-    inlines = [FindingInline]
+    inlines = [FindingInline, ChatSessionInline]

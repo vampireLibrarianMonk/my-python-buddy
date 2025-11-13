@@ -140,3 +140,33 @@ class Finding(models.Model):
 
     def __str__(self):
         return f"{self.severity} {self.rule_id} (line {self.line}) [{self.file_name}]"
+
+
+class ChatSession(models.Model):
+    class ChatType(models.TextChoices):
+        SEARCH = "search", "Search"
+        CODE = "code", "Code"
+
+    run = models.ForeignKey(
+        "Run",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="chat_sessions",
+    )
+    file_name = models.CharField(max_length=255, blank=True)
+    file_hash = models.CharField(max_length=64, blank=True, db_index=True)
+    analyzer = models.CharField(max_length=50, blank=True)
+    analyzer_version = models.CharField(max_length=25, blank=True)
+    prompt = models.TextField(help_text="User input text")
+    response = models.TextField(help_text="Model response")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    chat_type = models.CharField(
+        max_length=10,
+        choices=ChatType.choices,
+        default=ChatType.SEARCH,
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
