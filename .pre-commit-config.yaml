@@ -34,12 +34,14 @@ repos:
     rev: "24.4.2"
     hooks:
       - id: black
-        exclude: 'notebook/raw_python/fine_tuning_model_pynb\.py'
+        exclude: |
+          (^notebook/raw_python/.*$)
       - id: black-jupyter
         entry: black
         require_serial: true
-        types_or: [python, pyi, jupyter]
-        exclude: 'notebook/raw_python/fine_tuning_model_pynb\.py'
+        types_or: [jupyter]
+        exclude: |
+          (^notebook/raw_python/.*$)
 
   # codespell:
   # Catches common spelling errors in comments, docstrings, etc.

@@ -1,15 +1,31 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# # Warning: Due to space constraints from running my tests I clear out the zip and unzipped folders. Ensure you have the zip stored in a separate location for additional operations.
+#
+# # Note it was found that I could not easily dynamically pull the notebook name so if you update the notebook update the following code:
+
 # In[1]:
 
 
-# sudo apt install python3-dmidecode
-# !pip3 install torch==2.8.0+cu126 --index-url https://download.pytorch.org/whl/cu126
-# !pip3 install tqdm
+nb_name = "MAT-12-03-search-query-notebook"
 
 
 # In[2]:
+
+
+# sudo apt install python3-dmidecode
+#!pip install llama-cpp-python   --upgrade   --force-reinstall   --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu126
+#!pip3 install torch==2.8.0+cu126 --index-url https://download.pytorch.org/whl/cu126
+
+
+# In[ ]:
+
+
+get_ipython().system('export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH')
+
+
+# In[3]:
 
 
 # Native
@@ -18,7 +34,9 @@ import hashlib
 import os
 import shutil
 import sys
+import time
 import zipfile
+from datetime import datetime
 from pathlib import Path
 
 from tqdm import tqdm
@@ -26,7 +44,7 @@ from tqdm import tqdm
 # Third Party
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
-# In[3]:
+# In[4]:
 
 
 # Get project base directory (one level up from current working directory)
@@ -45,18 +63,18 @@ print("base_application added to PATH:")
 print(base_application_dir)
 
 
-# In[4]:
+# In[5]:
 
 
 from views_chat_utilities import build_summary_prompt, clean_and_build_summary, perform_brave_search_query
 
-# In[5]:
+# In[6]:
 
 
 get_ipython().system('django-admin startproject temp_project')
 
 
-# In[6]:
+# In[7]:
 
 
 import getpass
@@ -84,7 +102,7 @@ setattr(settings, "BRAVE_API_KEY", BRAVE_API_KEY)
 print("Brave API Key loaded successfully.")
 
 
-# In[7]:
+# In[8]:
 
 
 RELEVANT_SECURITY_DOMAINS = {
@@ -107,7 +125,7 @@ RELEVANT_SECURITY_DOMAINS = {
 setattr(settings, "RELEVANT_SECURITY_DOMAINS", RELEVANT_SECURITY_DOMAINS)
 
 
-# In[8]:
+# In[9]:
 
 
 # Generates a cleaned text response using a Hugging Face model pipeline (non-llama specific).
@@ -189,7 +207,7 @@ def get_cleaned_summary_response_merged_model(llm_model, tokenizer, user_questio
     return cleaned_text, prompt_tokens, max_tokens_used
 
 
-# In[9]:
+# In[10]:
 
 
 # Compute SHA256 of a file
@@ -201,7 +219,7 @@ def sha256sum(file_path, block_size=65536):
     return sha.hexdigest()
 
 
-# In[10]:
+# In[11]:
 
 
 # Define paths
@@ -210,7 +228,7 @@ hash_path = os.path.join(base_dir, "models", "llama-2-merged-7b-143k-codeAlpaca-
 extract_dir = os.path.join(base_dir, "models", "llama-2-merged-7b-14k-codeAlpaca-2025-10-30_1143")
 
 
-# In[11]:
+# In[12]:
 
 
 if os.path.exists(extract_dir):
@@ -223,7 +241,7 @@ else:
     print(f"Directory not found: {extract_dir}.")
 
 
-# In[12]:
+# In[13]:
 
 
 # Read expected hash
@@ -240,7 +258,7 @@ else:
     raise Exception((f"Hash mismatch!\nExpected: {expected_hash}\nFound: {actual_hash}"))
 
 
-# In[13]:
+# In[14]:
 
 
 if not os.path.exists(extract_dir):
@@ -267,7 +285,7 @@ else:
     print(f"Directory already exists: {extract_dir}")
 
 
-# In[14]:
+# In[15]:
 
 
 # Remove archive (comment out if you want to keep it)
@@ -281,7 +299,7 @@ else:
     print(f"File not found: {zip_path}")
 
 
-# In[15]:
+# In[16]:
 
 
 # Load model and tokenizer
@@ -293,7 +311,7 @@ tokenizer = AutoTokenizer.from_pretrained(extract_dir)
 print(f"Model and tokenizer loaded from {extract_dir}")
 
 
-# In[16]:
+# In[17]:
 
 
 questions = [
@@ -305,20 +323,67 @@ questions = [
 ]
 
 
-# In[17]:
-
-
-for i, user_question in enumerate(questions, start=1):
-    cleaned_response, prompt_tokens, max_new_tokens = get_cleaned_summary_response_merged_model(model, tokenizer, user_question)
-
-    print(f"\nQuestion {i}: {user_question}")
-    print(f"Cleaned Response:\n{cleaned_response}")
-    print(f"Prompt Tokens: {prompt_tokens}")
-    print(f"Max New Tokens: {max_new_tokens}")
-    print("-" * 88)
-
-
 # In[18]:
+
+
+# Setup output directory and file
+base_dir = Path(__file__).resolve().parent if "__file__" in globals() else Path.cwd()
+results_dir = base_dir / "test_results"
+results_dir.mkdir(exist_ok=True)
+
+timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+output_file = results_dir / f"{nb_name}_{timestamp}.txt"
+
+execution_times = []  # store all durations
+
+# Begin loop over questions
+with open(output_file, "w", encoding="utf-8") as f:
+    for i, user_question in enumerate(questions, start=1):
+        print(f"\nQuestion {i}: {user_question}")
+        f.write(f"\nQuestion {i}: {user_question}\n")
+
+        # --- Measure time ---
+        start_time = time.time()
+        cleaned_response, prompt_tokens, max_new_tokens = get_cleaned_summary_response_merged_model(
+            model,
+            tokenizer,
+            user_question,
+        )
+        end_time = time.time()
+        duration = end_time - start_time
+        execution_times.append(duration)
+
+        # --- Display and record results ---
+        print(f"Cleaned Response:\n{cleaned_response}")
+        print("-" * 88)
+
+        f.write(f"Cleaned Response:\n{cleaned_response}\n")
+        f.write(f"Prompt Tokens: {prompt_tokens}\n")
+        f.write(f"Max New Tokens: {max_new_tokens}\n")
+        f.write(f"Time Taken: {duration:.2f} seconds\n")
+        f.write("Is result correct? If not, one sentence as to why:\n\n")
+        f.write("-" * 88 + "\n")
+
+    # Compute and record summary stats
+    if execution_times:
+        low_time = min(execution_times)
+        high_time = max(execution_times)
+        avg_time = sum(execution_times) / len(execution_times)
+
+        summary = (
+            f"\nExecution Time Summary:\n"
+            f"Lowest Time:  {low_time:.2f} seconds\n"
+            f"Highest Time: {high_time:.2f} seconds\n"
+            f"Average Time: {avg_time:.2f} seconds\n"
+        )
+
+        print(summary)
+        f.write(summary)
+
+print(f"\nAll results recorded to: {output_file}")
+
+
+# In[19]:
 
 
 # Cleanup extracted directory
@@ -329,7 +394,7 @@ except Exception as e:
     print(f"Error deleting {extract_dir}: {e}")
 
 
-# In[19]:
+# In[20]:
 
 
 # Django Cleanup
