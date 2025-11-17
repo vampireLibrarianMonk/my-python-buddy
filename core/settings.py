@@ -82,6 +82,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'channels',
+    'django_extensions',
     'base_application',
 ]
 
@@ -189,3 +190,32 @@ CHANNEL_LAYERS = {
 #     "default": {"BACKEND": "channels_redis.core.RedisChannelLayer",
 #                 "CONFIG": {"hosts": [("127.0.0.1", 6379)]}}
 # }
+
+# Brave Search Engine
+BRAVE_API_KEY = os.getenv("BRAVE_API_KEY", "INSECURE-DUDE-DEV-ONLY")
+RELEVANT_SECURITY_DOMAINS = {
+    "boost": [
+        # Manually found good sources
+        "arjancodes.com",
+        # Core analyzers and secure-coding authorities
+        "bandit.readthedocs.io",
+        "semgrep.dev",
+        "mypy.readthedocs.io",
+        "docs.python.org",
+        "owasp.org",
+        # Reliable security blogs / research
+        "securitylab.github.com",
+    ],
+    "discard": [
+        "reddit.com",
+        "stackoverflow.com",
+        "snyk.io",
+        "github.com",
+        "gitlab.com",
+        "quora.com",
+        "geeksforgeeks.org",
+    ],
+}
+
+# LLama model usage
+GGUF_FILE_NAME = os.getenv("GGUF_FILE_NAME", "Environment variable for GGUF path not defined.")

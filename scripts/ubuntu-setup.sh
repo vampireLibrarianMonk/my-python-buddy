@@ -1,6 +1,33 @@
 #!/bin/bash
 set -e
 
+REPO="https://github.com/vampireLibrarianMonk/my-python-buddy.git"
+
+BRANCH="$1"
+
+# Error handling: missing branch argument
+if [ -z "${BRANCH:-}" ]; then
+  echo "Error: Missing required branch name."
+  echo "Usage: $0 <branch>"
+  echo "Example: $0 name-of-branch"
+  exit 1
+fi
+
+# Validate branch name format (basic Git branch rules)
+if ! [[ "$BRANCH" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+  echo "Error: Invalid branch name: '$BRANCH'"
+  echo "Allowed characters: letters, numbers, ., _, -, /"
+  exit 1
+fi
+
+# Validate that a branch exists on the remote repository
+if ! git ls-remote --heads "$REPO" "$BRANCH" >/dev/null 2>&1; then
+  echo "Error: Branch '$BRANCH' does not exist in remote repository: $REPO"
+  exit 1
+fi
+
+echo "Branch '$BRANCH' is valid and exists on remote."
+
 # Create user 'my-python-buddy' if not exists
 if ! id "my-python-buddy" &>/dev/null; then
   sudo adduser --disabled-password --gecos "" my-python-buddy
@@ -11,11 +38,14 @@ fi
 USER_HOME="/home/my-python-buddy"
 PROJECT_DIR="$USER_HOME/my-python-buddy"
 
+sudo mkdir -p /home/my-python-buddy
+sudo chown my-python-buddy:my-python-buddy /home/my-python-buddy
+
 # EC2 Ubuntu user-data: install dependencies, clone repo/branch and create .env with cloud-aware hosts/origins.
 echo "[*] Updating packages and installing prerequisites..."
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
-apt-get install -y git bzip2 curl mkcert wget
+apt-get install -y build-essential bzip2 cmake curl gcc-12 g++-12 git mkcert wget
 
 # Basic logger
 log() { echo "[$(date +%H:%M:%S)] $*"; }
@@ -80,7 +110,7 @@ openssl x509 -in "$CERT" -noout -text | grep -A2 "Subject Alternative Name" || t
 [[ -f "$CERT" && -f "$KEY" ]] || { echo "[ERROR] TLS cert or key not found."; exit 1; }
 
 # Everything below runs as 'my-python-buddy'
-sudo -u my-python-buddy env PUB_IP="$PUB_IP" PUB_DNS="$PUB_DNS" USER_HOME="$USER_HOME" bash <<'EOF'
+sudo -u my-python-buddy env PUB_IP="$PUB_IP" PUB_DNS="$PUB_DNS" USER_HOME="$USER_HOME" BRANCH="$BRANCH" REPO="$REPO" bash <<'EOF'
 #!/bin/bash
 set -euo pipefail
 
@@ -91,12 +121,12 @@ if [ -d "$PROJECT_DIR/.git" ]; then
   git -C "$PROJECT_DIR" fetch --all
 else
   echo "    - Cloning fresh copy..."
-  git clone https://github.com/vampireLibrarianMonk/my-python-buddy.git "$PROJECT_DIR"
+  git clone $REPO "$PROJECT_DIR"
 fi
 
-echo "[*] Switching to branch: base-scaffolding"
+echo "[*] Switching to branch: $BRANCH"
 cd "$PROJECT_DIR"
-git checkout base-scaffolding || (git fetch origin base-scaffolding && git checkout base-scaffolding)
+git checkout $BRANCH || (git fetch origin $BRANCH && git checkout $BRANCH)
 
 echo "[*] Generating Django SECRET_KEY..."
 DJANGO_SECRET_KEY="$(python3 - <<'PY'
@@ -153,12 +183,67 @@ $USER_HOME/miniconda3/bin/conda tos accept --override-channels --channel https:/
 
 # Conda environment setup from yml and activate
 cd "$PROJECT_DIR"
-$USER_HOME/miniconda3/bin/conda env create -f environment.yml
 
-log "[✓] Setup completed."
+echo "Attempting to create Conda environment from environment.yml..."
+MAX_RETRIES=5
+RETRY_DELAY=10
+ATTEMPT=1
+
+while [ $ATTEMPT -le $MAX_RETRIES ]; do
+  echo "  - Attempt $ATTEMPT of $MAX_RETRIES..."
+  if "$USER_HOME/miniconda3/bin/conda" env create -f environment.yml; then
+    echo "Conda environment created successfully."
+    break
+  else
+    echo "Conda failed to create environment (likely network error)."
+    if [ $ATTEMPT -eq $MAX_RETRIES ]; then
+      echo "All attempts failed. Please check your network or proxy settings."
+      exit 1
+    fi
+    echo "  - Retrying in ${RETRY_DELAY}s..."
+    sleep $RETRY_DELAY
+    ((ATTEMPT++))
+  fi
+done
+
+log "Setup completed."
 log "    Repository:        $PROJECT_DIR"
-echo "    Branch:            base-scaffolding"
+echo "    Branch:            $BRANCH"
 echo "    Public IP:         ${PUB_IP:-<none>}"
 echo "    Public DNS:        ${PUB_DNS:-<none>}"
 echo "    .env created with cloud-aware ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS."
 echo "    mkcert CA Root:    $(mkcert -CAROOT 2>/dev/null || echo '<not-found>')"
+
+echo "Installing CUDA and NVIDIA Driver..."
+
+# Download CUDA 12.4.1 installer
+wget https://developer.download.nvidia.com/compute/cuda/12.4.1/local_installers/cuda_12.4.1_550.54.15_linux.run
+
+# Run the installer silently (designated CC version, toolkit, driver, override warnings)
+sudo CC=/usr/bin/gcc-12 CXX=/usr/bin/g++-12 sh cuda_12.4.1_550.54.15_linux.run --silent --toolkit --driver --override
+
+# Load the NVIDIA kernel module
+sudo modprobe nvidia
+
+# Verify that the driver is active
+nvidia-smi || echo "nvidia-smi failed: NVIDIA driver may not be loaded properly"
+
+# Set up environment variables system-wide
+sudo tee /etc/profile.d/cuda.sh > /dev/null << 'EOF'
+export PATH=/usr/local/cuda/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+EOF
+
+# Apply environment changes for current session
+source /etc/profile.d/cuda.sh
+
+# Load Conda environment
+eval "$($USER_HOME/miniconda3/bin/conda shell.bash hook)"
+conda activate my-python-buddy
+
+# Install llama-cpp-python with CUDA support using all available processors
+CMAKE_ARGS="-DGGML_CUDA=on" PIP_BUILD_ARGS="--parallel $(nproc)" pip install llama-cpp-python
+
+# Reboot for the required activation of the driver
+echo "Rebooting to activate the NVIDIA driver..."
+sudo reboot

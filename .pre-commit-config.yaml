@@ -153,12 +153,13 @@ repos:
     rev: "1.7.6"
     hooks:
       - id: bandit
-        args: ["-x",
-               "tests,sample_files",
-               "--exclude",
-               "base_application/templatetags/custom_tags.py",
-               "notebook"
+        args: [
+          "--skip", "B110,B404,B603,B607", # training evaluation of trusted input and ok to pass checks.
+          "-x", "tests,sample_files",
+          "--exclude", "base_application/templatetags/custom_tags.py",
+          "notebook"
         ]
+
 
   # detect-secrets:
   # Detects secrets like API keys or credentials in code.

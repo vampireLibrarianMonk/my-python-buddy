@@ -1,17 +1,19 @@
 # Django view logic handling user requests and application workflows
 # Docs: https://docs.djangoproject.com/en/stable/topics/http/views/
 
-# Standard library
 import hashlib
 import os
 import secrets
-import time
+
+# Standard library
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote as urlquote
 
 # Django
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import PasswordChangeView
 from django.core.paginator import Paginator
@@ -29,6 +31,9 @@ from base_application.models import Run, severity_color_map
 
 # Tasking
 from base_application.taskings import executor, run_analyzer_task
+
+# Core
+from core.health import full_health_summary
 
 # Local
 from .forms import AnalyzerSelectForm, UploadPyForm
@@ -170,23 +175,24 @@ def upload_success_view(request):
     )
 
 
+@staff_member_required
 @login_required
 @require_http_methods(["GET"])
 def healthcheck_view(request):
-    """
-    Healthcheck driven by .env-backed Django settings.
-    """
-    return JsonResponse(
-        {
-            "status": "ok",
-            "app": settings.APP_NAME,
-            "env": settings.APP_ENV,
-            "version": settings.APP_VERSION,
-            "build": settings.APP_BUILD,
-            "debug": bool(settings.DEBUG),
-            "time": time.time(),
-        },
+    # Extended Healthcheck: application, redis, system and runtime.
+    summary = full_health_summary(
+        app_name=settings.APP_NAME,
+        app_env=settings.APP_ENV,
+        app_version=settings.APP_VERSION,
+        app_build=settings.APP_BUILD,
+        debug=bool(settings.DEBUG),
     )
+
+    # Convert timestamp to a readable datetime
+    summary["timestamp"] = datetime.fromtimestamp(summary["timestamp"])
+
+    # Render a clean HTML dashboard for system admins
+    return render(request, "core/healthz.html", {"summary": summary})
 
 
 @login_required

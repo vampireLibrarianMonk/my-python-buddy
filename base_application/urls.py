@@ -4,6 +4,7 @@
 from django.urls import path
 
 # Views
+from . import views_chat
 from .views import (
     analyze_file_view,
     bandit_status_json,
@@ -21,12 +22,12 @@ from .views import (
 
 # Pathway routing for base_application
 urlpatterns = [
+    # Application system checks and associated versions
+    path("healthz/", healthcheck_view, name="healthz"),  # Admin only
     # File menu
     path("", upload_view, name="upload"),
     # File upload success
     path("success/", upload_success_view, name="upload_success"),
-    # Application system checks and associated versions
-    path("healthz/", healthcheck_view, name="healthcheck"),
     # Menu actions
     path("analyze/<str:sha256>/", analyze_file_view, name="analyze_file"),
     path("delete/<str:sha256>/", delete_file_view, name="delete_file"),
@@ -39,4 +40,7 @@ urlpatterns = [
     path("api/vulture-statuses/", vulture_status_json, name="vulture_status_json"),
     # Analysis results for a particular run
     path("runs/<int:pk>/", run_detail, name="run_detail"),
+    # LLM Chat Bot
+    path("api/chat_llm/", views_chat.chat_llm, name="chat_llm"),
+    path("api/chat_reset/", views_chat.chat_reset, name="chat_reset"),
 ]

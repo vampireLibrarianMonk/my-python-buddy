@@ -1,0 +1,254 @@
+
+Question 1: Code: How do I filter even numbers from a list using a list comprehension?
+Cleaned Response:
+```python
+# Define a list of numbers
+numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+# Filter out even numbers using list comprehension
+filtered_numbers = [num for num in numbers if num % 2!= 0]
+
+print(filtered_numbers)
+```
+Prompt Tokens: 61
+Max New Tokens: 300
+Time Taken: 67.52 seconds
+Is result correct? If not, one sentence as to why: No, filters uneven numbers.
+
+----------------------------------------------------------------------------------------
+
+Question 2: Code: How do I find the common elements between two lists in Python?
+Cleaned Response:
+You can use the built-in `set` function in Python to find the common elements between the two lists. Here's how you can do it:
+
+```python
+# List 1
+list1 = [1, 2, 3, 4, 5]
+
+# List 2
+list2 = [3, 4, 'a', 'b', 'c']
+
+# Find common elements
+common_elements = set(list1) & set(list2)
+
+print(common_elements)
+```
+
+This will output:
+
+```
+{3, 4}
+```
+
+The `&` operator is used to perform a bitwise AND operation on the two sets, which returns a new set containing all the elements that are present in both lists.
+Prompt Tokens: 59
+Max New Tokens: 300
+Time Taken: 136.13 seconds
+Is result correct? If not, one sentence as to why: Yes.
+
+----------------------------------------------------------------------------------------
+
+Question 3: Code: How do I remove all vowels from a string in Python?
+Cleaned Response:
+```python
+def remove_vowels(s):
+    return ''.join([char for char in s if char not in 'aeiouAEIOU'])
+```
+Prompt Tokens: 60
+Max New Tokens: 300
+Time Taken: 30.92 seconds
+Is result correct? If not, one sentence as to why: Yes.
+
+----------------------------------------------------------------------------------------
+
+Question 4: Code: How do I count how many times each word appears in a string?
+Cleaned Response:
+```python
+def count_word_occurrences(string):
+    words = string.split()
+    word_counts = {}
+    for word in words:
+        if word in word_counts:
+            word_counts[word] += 1
+        else:
+            word_ counts[word] = 1
+    return word_counts
+```
+Prompt Tokens: 60
+Max New Tokens: 300
+Time Taken: 65.16 seconds
+Is result correct? If not, one sentence as to why: No, syntax error with word_counts
+
+----------------------------------------------------------------------------------------
+
+Question 5: Code: How do I check if a string is a palindrome, ignoring case and spaces?
+Cleaned Response:
+```python
+def is_palindrome(s: str) -> bool:
+    """
+    Check if a string is a Palindrome, ignoring Case and spaces.
+
+    Args:
+        s (str): The string to be checked for palindrome.
+
+    Returns:
+        bool: True if the string is a palindromic, False otherwise.
+    """
+    # Remove spaces and convert to lowercase
+    s = ''.join(e for e in s if e.isalnum()).lower()
+
+    # Check if the string is equal to its reverse
+    return s == s[::-1]
+```
+Prompt Tokens: 65
+Max New Tokens: 300
+Time Taken: 116.19 seconds
+Is result correct? If not, one sentence as to why: Yes.
+
+----------------------------------------------------------------------------------------
+
+Question 6: Code: How do I get the current date and time in Python?
+Cleaned Response:
+```python
+import datetime
+
+# Get the current date and time
+current_date_time = datetime.datetime.now()
+print(current_date_time)
+```
+Prompt Tokens: 58
+Max New Tokens: 300
+Time Taken: 30.43 seconds
+Is result correct? If not, one sentence as to why: Yes.
+
+----------------------------------------------------------------------------------------
+
+Question 7: Code: How do I find the factorial of a number using recursion in Python?
+Cleaned Response:
+```python
+def factorial(n):
+    if n == 0:
+        return 1
+    else:
+        return n * factorial(n-1)
+```
+Prompt Tokens: 61
+Max New Tokens: 300
+Time Taken: 31.99 seconds
+Is result correct? If not, one sentence as to why: Yes.
+
+----------------------------------------------------------------------------------------
+
+Question 8: Code: How do I merge two dictionaries into one in Python?
+Cleaned Response:
+You can merge two dictionaries into a single dictionary in Python using the `update()` method. Here's an example:
+
+```python
+# Define two dictionaries
+dict1 = {'a': 1, 'b': 2, 'c': 3}
+dict2 = {'d': 4, 'e': 5, 'f': 6}
+
+# Merge the two dictionaries
+merged_dict = dict1.update(dict2)
+
+# Print the merged dictionary
+print(merged_dict)
+```
+
+Output:
+```
+{'a': 1,
+ 'b': 2
+ 'c': 3,
+ 'd': 4,
+ 'e': 5
+ 'f': 6
+}
+```
+
+In this example, `dict1` and `dict2` are merged into a new dictionary called `merged_dict`. The `update()` method takes another dictionary as an argument and merges its key-value pairs with the existing dictionary. The resulting dictionary is then printed.
+Prompt Tokens: 58
+Max New Tokens: 300
+Time Taken: 183.28 seconds
+Is result correct? If not, one sentence as to why: No, dict.update() will return None which percolates to merged_dict becomes None.
+
+----------------------------------------------------------------------------------------
+
+Question 9: Code: How do I find all unique words in a sentence, ignoring case and punctuation?
+Cleaned Response:
+```python
+import re
+
+def find_unique_words(sentence):
+    # Remove punctuation and convert to lowercase
+    cleaned_sentence = re.sub(r'[^\w\s]', '', sentence.lower())
+
+    # Split the sentence into words
+    words = cleaned_sentence.split()
+
+    # Create a set of unique words
+    unique_words = set(words)
+
+    return list(unique_words)
+```
+Prompt Tokens: 65
+Max New Tokens: 300
+Time Taken: 89.41 seconds
+Is result correct? If not, one sentence as to why: Yes.
+
+----------------------------------------------------------------------------------------
+
+Question 10: Code: How do I find the most frequent element in a list without using the collections module?
+Cleaned Response:
+Here is a simple Python function that finds the most frequent element in an array without using the collections module.
+
+```python
+def most_frequent(arr):
+    freq = {}
+    max_freq = 0
+    max_fq = None
+    for i in arr:
+        if i in freq:
+            freq[i] += 1
+        else:
+            freq.update({i: 1})
+        if freq[i] > max_freq:
+            max_fq = i
+            max_freq = freq[i]
+    return max_fq
+```
+
+This function works by iterating over each element in the array and updating a dictionary `freq` to keep track of the count of each element. It also keeps track of the maximum frequency encountered so far. When it encounters an element that has a higher frequency than the current maximum, it updates the `max_fq` and `max_freq` variables. Finally, it returns the element with the highest frequency.
+Prompt Tokens: 63
+Max New Tokens: 300
+Time Taken: 186.10 seconds
+Is result correct? If not, one sentence as to why: Yes.
+
+----------------------------------------------------------------------------------------
+
+Question 11: Code: How do I determine if two strings are anagrams of each other in Python?
+Cleaned Response:
+```python
+def is_anagram(str1, str2):
+    # Remove spaces and convert to lowercase
+    str1 = str1.replace(" ", "").lower()
+    str2 = str2.replace(" ", "').lower()
+
+    # Sort the characters of both strings
+    sorted_str1 = sorted(str1)
+    sorted_str2 = sorted(str2)
+
+    # Check if the sorted strings are equal
+    return sorted_str1 == sorted_str2
+```
+Prompt Tokens: 63
+Max New Tokens: 300
+Time Taken: 91.13 seconds
+Is result correct? If not, one sentence as to why: No, missing closing quote in str2.replace(" ", "').lower().
+
+----------------------------------------------------------------------------------------
+
+Execution Time Summary:
+Lowest Time:  30.43 seconds
+Highest Time: 186.10 seconds
+Average Time: 93.48 seconds

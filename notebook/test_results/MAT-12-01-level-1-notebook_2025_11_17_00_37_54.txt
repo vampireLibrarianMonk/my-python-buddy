@@ -1,0 +1,156 @@
+
+Question 1: Code: How do I reverse a list in Python?
+Cleaned Response:
+```python
+def reverse_list(lst):
+    return lst[::-1]
+```
+Prompt Tokens: 55
+Max New Tokens: 300
+Time Taken: 51.06 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 2: Code: How do I reverse an array in Python?
+Cleaned Response:
+```python
+def reverse_array(arr):
+    return arr[::-1]
+```
+Prompt Tokens: 55
+Max New Tokens: 300
+Time Taken: 50.37 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 3: Code: How do I sort a list of numbers in Python?
+Cleaned Response:
+```python
+# Sort a list of numbers in ascending order
+numbers = [3, 1, 5, 2, 4]
+sorted_numbers = sorted(numbers)
+print(sorted_numbers)
+```
+Prompt Tokens: 57
+Max New Tokens: 300
+Time Taken: 115.55 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 4: Code: How do I remove duplicates from a list in Python?
+Cleaned Response:
+```python
+def remove_duplicates(lst):
+    return list(dict.fromkeys(lst))
+```
+Prompt Tokens: 57
+Max New Tokens: 300
+Time Taken: 57.98 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 5: Code: How do I find the length of a string in Python?
+Cleaned Response:
+```python
+def find_length(string):
+    return len(string)
+```
+Prompt Tokens: 58
+Max New Tokens: 300
+Time Taken: 44.33 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 6: Code: How do I check if a number is even in Python?
+Cleaned Response:
+```python
+def is_even(n):
+    return n % 2 == 0
+```
+Prompt Tokens: 58
+Max New Tokens: 300
+Time Taken: 51.24 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 7: Code: How do I concatenate two strings in Python?
+Cleaned Response:
+```python
+# Concatenating two strings
+str1 = "Hello"
+str2 = "World"
+
+# Concatenation using the + operator
+result = str1 + str2
+
+print(result)
+```
+Prompt Tokens: 56
+Max New Tokens: 300
+Time Taken: 110.73 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 8: Code: How do I get both the index and value while looping through a list in Python?
+Cleaned Response:
+You can use the `enumerate` function to get both the index and the value of each element in a list. Here's an example:
+
+```python
+my_list = [1, 2, 3, 4, 5]
+for i, val in enumerate(my_list):
+    print(f"Index: {i}, Value: {val}")
+```
+
+This will output:
+```
+Index: 0, Value: 1
+Index: 1, Value: 2
+Index: 2, Value: 3
+Index: 3, Value: 4
+Index: 4, Value: 5
+```
+Prompt Tokens: 63
+Max New Tokens: 300
+Time Taken: 319.54 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 9: Code: How do I check if a key exists in a dictionary in Python?
+Cleaned Response:
+```python
+def check_key_in_dict(dictionary, key):
+    return key in dictionary
+```
+Prompt Tokens: 60
+Max New Tokens: 300
+Time Taken: 55.42 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 10: Code: How do I swap the values of two variables without using a third variable in Python?
+Cleaned Response:
+```python
+def swap_values(a, b):
+    a, b = b, a
+    return a, b
+```
+Prompt Tokens: 63
+Max New Tokens: 300
+Time Taken: 67.46 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Execution Time Summary:
+Lowest Time:  44.33 seconds
+Highest Time: 319.54 seconds
+Average Time: 92.37 seconds

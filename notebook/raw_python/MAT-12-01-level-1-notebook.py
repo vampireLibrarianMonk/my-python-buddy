@@ -8,21 +8,15 @@
 # In[1]:
 
 
-nb_name = "MAT-12-01-level-1-notebook"
+# Run the following once and once only when setting up jupyter notebooks for the 12-xx-xx series tests
+# sudo apt install -y python3-dmidecode
+# !pip3 install torch==2.8.0+cu124 --index-url https://download.pytorch.org/whl/cu124
 
 
 # In[2]:
 
 
-# sudo apt install python3-dmidecode
-#!pip install llama-cpp-python   --upgrade   --force-reinstall   --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu126
-#!pip3 install torch==2.8.0+cu126 --index-url https://download.pytorch.org/whl/cu126
-
-
-# In[ ]:
-
-
-get_ipython().system('export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:$LD_LIBRARY_PATH')
+nb_name = "MAT-12-01-level-1-notebook"
 
 
 # In[3]:
@@ -39,12 +33,40 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 
-from tqdm import tqdm
-
 # Third Party
+import torch
+from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 # In[4]:
+
+
+# Confirm you are using the GPU method
+def print_gpu_info():
+    print("GPU Characteristics Printout")
+
+    # Is CUDA available?
+    print("CUDA available:", torch.cuda.is_available())
+    print("Device count:", torch.cuda.device_count())
+
+    if torch.cuda.is_available():
+        idx = torch.cuda.current_device()
+        print("Current device index:", idx)
+        print("Device name:", torch.cuda.get_device_name(idx))
+        print("Total memory (GB):", round(torch.cuda.get_device_properties(idx).total_memory / 1e9, 2))
+        print("Multiprocessors:", torch.cuda.get_device_properties(idx).multi_processor_count)
+        print("Compute capability:", torch.cuda.get_device_properties(idx).major, ".", torch.cuda.get_device_properties(idx).minor)
+        print("CUDA Runtime:", torch.version.cuda)
+
+
+# In[5]:
+
+
+# Exercise GPU Printout
+print_gpu_info()
+
+
+# In[6]:
 
 
 # Get project base directory (one level up from current working directory)
@@ -63,12 +85,12 @@ print("base_application added to PATH:")
 print(base_application_dir)
 
 
-# In[5]:
+# In[7]:
 
 
 from views_chat_utilities import SYSTEM_PROMPTS
 
-# In[6]:
+# In[8]:
 
 
 # Generates a cleaned text response using a Hugging Face model pipeline (non-llama specific).
@@ -140,7 +162,7 @@ def get_cleaned_code_response_merged_model(llm_model, tokenizer, user_question):
     return cleaned_text, prompt_tokens, max_tokens_used
 
 
-# In[7]:
+# In[9]:
 
 
 # Compute SHA256 of a file
@@ -152,7 +174,7 @@ def sha256sum(file_path, block_size=65536):
     return sha.hexdigest()
 
 
-# In[8]:
+# In[10]:
 
 
 # Define paths
@@ -161,7 +183,7 @@ hash_path = os.path.join(base_dir, "models", "llama-2-merged-7b-143k-codeAlpaca-
 extract_dir = os.path.join(base_dir, "models", "llama-2-7b-143k-codeAlpaca-2025-10-30_1326")
 
 
-# In[9]:
+# In[11]:
 
 
 if os.path.exists(extract_dir):
@@ -174,7 +196,7 @@ else:
     print(f"Directory not found: {extract_dir}.")
 
 
-# In[10]:
+# In[12]:
 
 
 # Read expected hash
@@ -191,7 +213,7 @@ else:
     raise Exception((f"Hash mismatch!\nExpected: {expected_hash}\nFound: {actual_hash}"))
 
 
-# In[11]:
+# In[13]:
 
 
 if not os.path.exists(extract_dir):
@@ -218,7 +240,7 @@ else:
     print(f"Directory already exists: {extract_dir}")
 
 
-# In[12]:
+# In[14]:
 
 
 # Remove archive (comment out if you want to keep it)
@@ -232,7 +254,7 @@ else:
     print(f"File not found: {zip_path}")
 
 
-# In[13]:
+# In[15]:
 
 
 # Load model and tokenizer
@@ -244,7 +266,7 @@ tokenizer = AutoTokenizer.from_pretrained(extract_dir)
 print(f"Model and tokenizer loaded from {extract_dir}")
 
 
-# In[14]:
+# In[16]:
 
 
 questions = [
@@ -261,7 +283,7 @@ questions = [
 ]
 
 
-# In[15]:
+# In[17]:
 
 
 # Setup output directory and file
@@ -280,14 +302,14 @@ with open(output_file, "w", encoding="utf-8") as f:
         print(f"\nQuestion {i}: {user_question}")
         f.write(f"\nQuestion {i}: {user_question}\n")
 
-        # --- Measure time ---
+        # Measure time
         start_time = time.time()
         cleaned_response, prompt_tokens, max_new_tokens = get_cleaned_code_response_merged_model(model, tokenizer, user_question)
         end_time = time.time()
         duration = end_time - start_time
         execution_times.append(duration)
 
-        # --- Display and record results ---
+        #  Display and record results
         print(f"Cleaned Response:\n{cleaned_response}")
         print("-" * 88)
 
@@ -317,7 +339,7 @@ with open(output_file, "w", encoding="utf-8") as f:
 print(f"\nAll results recorded to: {output_file}")
 
 
-# In[16]:
+# In[18]:
 
 
 # Cleanup extracted directory

@@ -1,0 +1,137 @@
+
+Question 1: Code: How do I reverse a list in Python?
+Cleaned Response:
+def reverse_list(lst):
+    return lst[::-1]
+
+Prompt Tokens: 17
+Max New Tokens: 1024
+Time Taken: 0.22 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 2: Code: How do I reverse an array in Python?
+Cleaned Response:
+def reverse_array(arr):
+    return arr[::-1]
+
+Prompt Tokens: 17
+Max New Tokens: 1024
+Time Taken: 0.14 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 3: Code: How do I sort a list of numbers in Python?
+Cleaned Response:
+numbers = [3, 5, 1, 7, 2]
+sorted_numbers = sorted(numbers)
+print(sorted_numbers)
+
+Prompt Tokens: 34
+Max New Tokens: 1024
+Time Taken: 0.25 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 4: Code: How do I remove duplicates from a list in Python?
+Cleaned Response:
+def remove_duplicates(lst):
+    seen = set()
+    result = []
+    for item in lst:
+        if item not in seen:
+            seen.add(item)
+            result.append(item)
+    return result
+
+Prompt Tokens: 55
+Max New Tokens: 1024
+Time Taken: 0.39 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 5: Code: How do I find the length of a string in Python?
+Cleaned Response:
+def string_length(s):
+    return len(s)
+
+Prompt Tokens: 15
+Max New Tokens: 1024
+Time Taken: 0.12 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 6: Code: How do I check if a number is even in Python?
+Cleaned Response:
+def is_even(n):
+    return n % 2 == 0
+
+Prompt Tokens: 18
+Max New Tokens: 1024
+Time Taken: 0.14 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 7: Code: How do I concatenate two strings in Python?
+Cleaned Response:
+str1 = "Hello"
+str2 = "World"
+print(str1 + str2)
+
+Prompt Tokens: 23
+Max New Tokens: 1024
+Time Taken: 0.17 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 8: Code: How do I get both the index and value while looping through a list in Python?
+Cleaned Response:
+my_list = [1, 2, 3, 4, 5]
+for i, value in enumerate(my_list):
+    print(f"Index: {i}, Value: {value}")
+
+Prompt Tokens: 48
+Max New Tokens: 1024
+Time Taken: 0.34 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 9: Code: How do I check if a key exists in a dictionary in Python?
+Cleaned Response:
+def check_key_exists(dictionary, key):
+    if key in dictionary:
+        return True
+    else:
+        return False
+
+Prompt Tokens: 31
+Max New Tokens: 1024
+Time Taken: 0.23 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 10: Code: How do I swap the values of two variables without using a third variable in Python?
+Cleaned Response:
+a = 10
+b = 20
+
+Prompt Tokens: 12
+Max New Tokens: 1024
+Time Taken: 0.10 seconds
+Is result correct? If not, one sentence as to why: No, values are never swapped.
+
+----------------------------------------------------------------------------------------
+
+Execution Time Summary:
+Lowest Time:  0.10 seconds
+Highest Time: 0.39 seconds
+Average Time: 0.21 seconds

@@ -132,7 +132,6 @@ dependencies:
       - jupyterlab==4.4.10
       - jupyterlab-pygments==0.3.0
       - jupyterlab-server==2.28.0
-      - llama-cpp-python==0.3.16
       - maison==1.4.3
       - markdown-it-py==4.0.0
       - markupsafe==3.0.3

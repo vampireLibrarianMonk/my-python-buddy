@@ -47,9 +47,6 @@ env_name="my-python-buddy"
 
 cd "$PROJECT_DIR"
 
-###############################################################################
-# .env handling: only create/modify if any SU vars are missing
-###############################################################################
 # Helper to read a key from .env without evaluating it
 get_env_val() {
   local key="$1"
@@ -121,9 +118,7 @@ else
   [[ -z "$EXISTING_PASS"  ]] && upsert_env_kv "DJANGO_SUPERUSER_PASSWORD" "$DJANGO_SUPERUSER_PASSWORD"
 fi
 
-###############################################################################
 # Django: migrations, collectstatic, idempotent superuser/profile creation
-###############################################################################
 log "Activating Conda env and setting up Django..."
 bash -c "source '$conda_cmd' && conda activate '$env_name' && \
   python manage.py makemigrations base_application && \

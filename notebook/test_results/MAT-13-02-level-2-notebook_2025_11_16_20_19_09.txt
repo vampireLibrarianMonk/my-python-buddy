@@ -1,0 +1,184 @@
+
+Question 1: Code: How do I filter even numbers from a list using a list comprehension?
+Cleaned Response:
+numbers = [1, 2, 3, 4, 5]
+filtered_numbers = [num for num in numbers if num % 2 == 0]
+print(filtered_numbers)
+
+Prompt Tokens: 47
+Max New Tokens: 1024
+Time Taken: 0.42 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 2: Code: How do I find the common elements between two lists in Python?
+Cleaned Response:
+def find_common_elements(list1, list2):
+    common_elements = []
+    for element in list1:
+        if element in list2:
+            common_elements.append(element)
+    return common_elements
+
+Prompt Tokens: 53
+Max New Tokens: 1024
+Time Taken: 0.38 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 3: Code: How do I remove all vowels from a string in Python?
+Cleaned Response:
+def remove_vowels(s):
+    vowels = "aeiouAEIOU"
+    return "".join([char for char in s if char not in vowels])
+
+Prompt Tokens: 44
+Max New Tokens: 1024
+Time Taken: 0.32 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 4: Code: How do I count how many times each word appears in a string?
+Cleaned Response:
+from collections import Counter
+
+
+def count_words(string):
+    words = string.split()
+    word_counts = Counter(words)
+    return word_counts
+
+Prompt Tokens: 42
+Max New Tokens: 1024
+Time Taken: 0.30 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 5: Code: How do I check if a string is a palindrome, ignoring case and spaces?
+Cleaned Response:
+def is_palindrome(s: str) -> bool:
+    """
+    Returns True if the string is a palindrome, ignoring case and spaces.
+    """
+    # Your code here
+
+Prompt Tokens: 46
+Max New Tokens: 1024
+Time Taken: 0.33 seconds
+Is result correct? If not, one sentence as to why: No, no code logic.
+
+----------------------------------------------------------------------------------------
+
+Question 6: Code: How do I get the current date and time in Python?
+Cleaned Response:
+import datetime
+
+print(datetime.datetime.now())
+
+Prompt Tokens: 12
+Max New Tokens: 1024
+Time Taken: 0.10 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 7: Code: How do I find the factorial of a number using recursion in Python?
+Cleaned Response:
+def factorial(n):
+    if n == 0:
+        return 1
+    else:
+        return n * factorial(n - 1)
+
+Prompt Tokens: 36
+Max New Tokens: 1024
+Time Taken: 0.26 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 8: Code: How do I merge two dictionaries into one in Python?
+Cleaned Response:
+def merge_dicts(dict1, dict2):
+    merged_dict = {}
+    for key in dict1:
+        merged_dict[key] = dict1[key]
+    for key in dict2:
+        merged_dict[key] = dict2[key]
+    return merged_dict
+
+Prompt Tokens: 70
+Max New Tokens: 1024
+Time Taken: 0.49 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 9: Code: How do I find all unique words in a sentence, ignoring case and punctuation?
+Cleaned Response:
+import re
+
+
+def find_unique_words(sentence):
+    # Remove punctuation and convert to lowercase
+    cleaned_sentence = re.sub(r"[^\w\s]", "", sentence.lower())
+
+    # Split the sentence into words
+    words = cleaned_sentence.split()
+
+    # Create a set of unique words
+    unique_words = set(words)
+
+    return list(unique_words)
+
+Prompt Tokens: 107
+Max New Tokens: 1024
+Time Taken: 0.75 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Question 10: Code: How do I find the most frequent element in a list without using the collections module?
+Cleaned Response:
+from collections import Counter
+
+
+def most_frequent(lst):
+    counter = Counter(lst)
+    return counter.most_common()[0][0]
+
+Prompt Tokens: 39
+Max New Tokens: 1024
+Time Taken: 0.30 seconds
+Is result correct? If not, one sentence as to why: No, uses collections module.
+
+----------------------------------------------------------------------------------------
+
+Question 11: Code: How do I determine if two strings are anagrams of each other in Python?
+Cleaned Response:
+def is_anagram(str1, str2):
+    # Remove non-alphanumeric characters and convert to lowercase
+    str1 = "".join(e for e in str1 if e.isalnum())
+    str2 = "".join(e for e in str2 if e.isalnum())
+
+    # Sort the strings and compare them
+    if sorted(str1) == sorted(str2):
+        return True
+    else:
+        return False
+
+Prompt Tokens: 109
+Max New Tokens: 1024
+Time Taken: 0.76 seconds
+Is result correct? If not, one sentence as to why: Yes
+
+----------------------------------------------------------------------------------------
+
+Execution Time Summary:
+Lowest Time:  0.10 seconds
+Highest Time: 0.76 seconds
+Average Time: 0.40 seconds

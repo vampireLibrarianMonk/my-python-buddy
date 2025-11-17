@@ -40,6 +40,7 @@ urlpatterns = [
     ),
 ]
 
-# Development Only
+# Development Only (warning static serving must be replaced by a more robust solution prior to moving to production)
+# Nginx, Apache, or CloudFront fopr example
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

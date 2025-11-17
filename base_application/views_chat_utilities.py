@@ -22,30 +22,7 @@ from isort import code as isort_fix_code
 
 # Analyzer-specific personalities (system prompts)
 SYSTEM_PROMPTS = {
-    "code_writer": (
-        "You are an expert Python tutor. "
-        "Respond with only ONE Python code block enclosed in triple backticks (```python ... ```). "
-        "Do not include extra code, explanations, notes, or text outside the code block. "
-        "Comments must be under 10 words directly describe what each part of the code does. "
-        "When writing code: "
-        "- Only utilize functions/methods when absolutely necessary. "
-        "- Use explicit type annotations for all parameters and return values. "
-        "- Use clear, descriptive and unambiguous parameter names. "
-        "- Avoid vague types like 'object' or omitting return types. "
-        "- Ensure default argument values match their declared types. "
-        "- Verify that all method return values exist and are logically consistent with the intent of the user’s "
-        "question. "
-        "Ensure Exception Handling: "
-        "- Use structured try/except blocks to handle predictable errors. "
-        "- Raise informative exceptions instead of returning None. "
-        "- Validate inputs at function start; raise TypeError or ValueError when needed. "
-        "- Avoid bare except clauses or silent error handling. "
-        "- Methods should always have a return statement. "
-        "Program Structure: "
-        "- Include a main() function if the code is intended to run standalone. "
-        "- The main() function should initialize and orchestrate execution. "
-        "- Call main() under 'if __name__ == \"__main__\":'. "
-    ),
+    "code_writer": ("You write only precise production grade Python code enclosed in triple backticks (```python ... ```). "),
 }
 
 # Security keyword gate for the coding path (refuse secure/remediation requests)
@@ -115,12 +92,14 @@ def perform_brave_search_query(user_question):
             desc = re.sub(r"\s+", " ", desc)
 
             # Discard domain filtering
-            if any(d in url for d in discard_domains):
-                continue
+            for domain in discard_domains:
+                if domain in url:
+                    print(url)
+                    continue
 
             # Tag high vs low trust
             tag = "[HIGH TRUST] " if any(domain in url for domain in boost_domains) else "[LOW TRUST] "
-            snippet = f"{tag}; Title: {title}; Hyperlink: ({url}); Description: {desc}"
+            snippet = f"Title: {title}; Hyperlink: ({url}); Description: {desc}"
 
             # Store appropriately
             if tag.startswith("[HIGH"):
@@ -274,24 +253,19 @@ def hash_snippet_content(snippet: str) -> str:
 
 
 # Create and return summary prompt
-def build_summary_prompt(summarize_max_words, user_question, formatted_snippet_block):
+def build_summary_prompt(user_question, formatted_snippet_block):
     summary_prompt = (
-        "You are a precise, factual summarization assistant. "
-        f"Write exactly one clear, self-contained paragraph (under {summarize_max_words} words total) "
-        "that focuses exclusively on the factual answer using only the information from the provided search "
-        "snippets. "
-        "Do not repeat or restate any part of the answer. "
-        "Do not mention source names, numbers, URLs or citations. "
-        "Avoid speculative or vague terms like 'may', 'might', 'could' or 'appears'. "
-        "Use concise, neutral and technically accurate language. "
-        "When describing security risks, limitations or unsafe behaviors, clearly state which technology or "
-        "method they apply to. "
-        "If multiple alternatives are described, present them in a single comparative sentence using balanced "
-        "phrasing. "
-        "Do not imply that risks or attributes of one subject apply to another. "
-        "Output only the final paragraph with no labels, prefixes or extra lines before or after.\n\n"
+        "You are only to formulate a short Response to the question from the given source material. "
+        "If the question is in regards to a specific tool or library tune your Response to directly address only the "
+        "tool or library in question. "
+        "If the question is about common patterns in a specific tool your Response should be a single sentence listing "
+        "out all the common patterns to said tool. "
+        "Remove all source material from the Response. "
+        "Remove all code from the Response. "
+        "Remove all blog text. "
+        "No clarification of the Response. "
         f"User question:\n{user_question}\n\n"
-        f"Search snippets:\n{formatted_snippet_block}\n\n"
+        f"Source Material:\n{formatted_snippet_block}\n\n"
         "Response:"
     )
 
@@ -348,18 +322,18 @@ def get_cleaned_summary_response(llm, user_question):
 
     # Strong factual summarizer prompt (revised)
     max_new_tokens = 360
-    summarize_max_words = max_new_tokens / 4
 
-    prompt = build_summary_prompt(summarize_max_words, user_question, formatted_snippet_block)
+    prompt = build_summary_prompt(user_question, formatted_snippet_block)
 
     response = llm.create_completion(
-        prompt=prompt,
-        max_tokens=max_new_tokens,
-        temperature=0.0,  # keep output fully deterministic
-        top_p=0.9,  # sample from top 90% tokens
-        frequency_penalty=0.5,  # reduce repetitive wording
-        repeat_penalty=1.5,  # discourage exact repeats
-        stop=["<|END_OF_RESPONSE|>"],  # end generation cleanly
+        prompt=prompt,  # input text
+        max_tokens=max_new_tokens,  # max output length
+        temperature=0.0,  # creativity
+        top_p=0.9,  # nucleus filter
+        top_k=30,  # token shortlist
+        frequency_penalty=1.2,  # less word reuse
+        repeat_penalty=1.6,  # less repetition
+        stop=["<|END_OF_RESPONSE|>", "INST"],  # stop tokens
     )["choices"][0][
         "text"
     ].strip()  # grab and trim final text
