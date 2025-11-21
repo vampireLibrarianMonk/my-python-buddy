@@ -17,12 +17,11 @@ from black import Mode as black_mode
 from black import format_str as black_formatter
 from bs4 import BeautifulSoup
 from django.conf import settings
-from django.http import JsonResponse
 from isort import code as isort_fix_code
 
 # Analyzer-specific personalities (system prompts)
 SYSTEM_PROMPTS = {
-    "code_writer": ("You write only precise production grade Python code enclosed in triple backticks (```python ... ```). "),
+    "code_writer": ("You write only precise production grade Python code enclosed in triple backticks " "(```python ... ```). "),
 }
 
 # Security keyword gate for the coding path (refuse secure/remediation requests)
@@ -30,9 +29,18 @@ SECURITY_TERMS_PATTERN = (
     r"\b("
     r"bandit|dodgy|mypy|semgrep|vulture|"
     r"safe|security|secure|vulnerab\w*|exploit\w*|remediat\w*|mitigat\w*|"
-    r"injection|sql\s*injection|sqli|xss|csrf|deserializ\w*|rce|cwe-\d+|cve-\d{4}-\d+|"
+    r"injection|sql\s*injection|sqli|xss|csrf|deserializ\w*|rce|cwe|cwe-\d+|cve|cve-\d{4}-\d+|"
     r"sanitize\w*|escape\w*|harden\w*|crypt\w*|hash|authenticat\w*|authoriz\w*"
     r")\b"
+)
+
+CODE_TERMS_PATTERN = (
+    r"(?<![A-Za-z])("
+    r"code|implement|program|write|rework|"
+    r"script|function|class|snippet|example|"
+    r"generate|create|refactor|debug|fix|"
+    r"build|develop|return"
+    r")(?![A-Za-z])"
 )
 
 
@@ -67,13 +75,14 @@ def perform_brave_search_query(user_question):
     min_high_trust_needed = 5  # threshold to proceed early
 
     # Loop until enough high-trust or cutoff
+    brave_failed = False
     while iteration < max_iterations and len(high_trust_results) < min_high_trust_needed:
         params = {"q": query_base, "count": site_count, "offset": iteration * site_count}
         brave_resp = requests.get(brave_url, headers=headers, params=params, timeout=10)
         iteration += 1
 
         if brave_resp.status_code != 200:
-            print(f"Brave API request failed at iteration {iteration} with {brave_resp.status_code}")
+            brave_failed = True
             break
 
         data = brave_resp.json()
@@ -94,7 +103,6 @@ def perform_brave_search_query(user_question):
             # Discard domain filtering
             for domain in discard_domains:
                 if domain in url:
-                    print(url)
                     continue
 
             # Tag high vs low trust
@@ -110,67 +118,57 @@ def perform_brave_search_query(user_question):
         # Avoid hammering API
         time.sleep(1.0)
 
-    # Combine — favor high trust, but backfill with low trust if needed
-    results = high_trust_results
-    if len(results) < min_high_trust_needed:
-        results += low_trust_results[: (min_high_trust_needed - len(results))]
+    # Combine (favor high trust, but backfill with low trust if needed)
+    if not brave_failed:
+        results = high_trust_results
+        if len(results) < min_high_trust_needed:
+            results += low_trust_results[: (min_high_trust_needed - len(results))]
 
-    # Deduplicate using (normalized_url + stripped_text_hash)
-    seen_keys = set()
-    deduped_results = []
-    citation_list = []
-    counter = 1
+        # Deduplicate using (normalized_url + stripped_text_hash)
+        seen_keys = set()
+        deduped_results = []
+        citation_list = []
+        counter = 1
 
-    for snippet in results:
-        url = normalize_url(snippet)
-        content_hash = hash_snippet_content(snippet)
-        key = f"{url}_{content_hash}"
-        if key not in seen_keys:
-            seen_keys.add(key)
-            deduped_results.append(snippet)
+        for snippet in results:
+            url = normalize_url(snippet)
+            content_hash = hash_snippet_content(snippet)
+            key = f"{url}_{content_hash}"
+            if key not in seen_keys:
+                seen_keys.add(key)
+                deduped_results.append(snippet)
 
-            # Safely split and keep only the 2nd and 3rd parts
-            parts = snippet.split(";")
-            cut_parts = [p.strip() for p in parts[1:3]] if len(parts) >= 3 else parts[1:]
-            cut_snippet = "; ".join(cut_parts)
+                # Safely split and keep only the 2nd and 3rd parts
+                parts = snippet.split(";")
+                cut_parts = [p.strip() for p in parts[1:3]] if len(parts) >= 3 else parts[1:]
+                cut_snippet = "; ".join(cut_parts)
 
-            citation_list.append(
-                f"  {counter}. {cut_snippet}".replace("Title:", "").replace("Hyperlink:", ""),
-            )
-            counter += 1
+                citation_list.append(
+                    f"  {counter}. {cut_snippet}".replace("Title:", "").replace("Hyperlink:", ""),
+                )
+                counter += 1
 
-    results = deduped_results
+        results = deduped_results
 
-    # Prepare summarizer input
-    top_snippets = results[:min_high_trust_needed]
-    formatted_snippet_block = "\n".join(top_snippets) or "No results found."
+        # Prepare summarizer input
+        top_snippets = results[:min_high_trust_needed]
+        formatted_snippet_block = "\n".join(top_snippets) or "No results found."
 
-    # Remove html
-    formatted_snippet_block = BeautifulSoup(formatted_snippet_block, "html.parser").get_text().strip()
+        # Remove html
+        formatted_snippet_block = BeautifulSoup(formatted_snippet_block, "html.parser").get_text().strip()
 
-    # Normalize encoding artifacts and apostrophes
-    formatted_snippet_block = formatted_snippet_block.encode("utf-8", "ignore").decode("utf-8")
-    formatted_snippet_block = re.sub(r"[’‘´`]", "'", formatted_snippet_block)  # apostrophes
-    formatted_snippet_block = re.sub(r"[^ -~]", " ", formatted_snippet_block)  # remove non-ASCII safely
-    formatted_snippet_block = re.sub(r"\s{2,}", " ", formatted_snippet_block).strip()  # spacing
+        # Normalize encoding artifacts and apostrophes
+        formatted_snippet_block = formatted_snippet_block.encode("utf-8", "ignore").decode("utf-8")
+        formatted_snippet_block = re.sub(r"[’‘´`]", "'", formatted_snippet_block)  # apostrophes
+        formatted_snippet_block = re.sub(r"[^ -~]", " ", formatted_snippet_block)  # remove non-ASCII safely
+        formatted_snippet_block = re.sub(r"\s{2,}", " ", formatted_snippet_block).strip()  # spacing
 
-    top_citations = citation_list[:min_high_trust_needed]
-    citation_block = "\n".join(top_citations) or "No sources found."
+        top_citations = citation_list[:min_high_trust_needed]
+        citation_block = "\n".join(top_citations) or "No sources found."
 
-    return citation_block, formatted_snippet_block
+        return citation_block, formatted_snippet_block
 
-
-def process_streamed_output(response):
-    """
-    Processes the streamed output chunk by chunk (supports llama_cpp format).
-    """
-    complete_output = ""
-    for chunk in response:
-        choice = chunk.get("choices", [{}])[0]
-        content = choice.get("text", "") or choice.get("delta", {}).get("content", "")
-        complete_output += content
-
-    return complete_output
+    return "No sources found (brave search api failed)", "No results found (brave search api failed)"
 
 
 def dedupe_paragraphs(summary: str, similarity_threshold: float = 0.9) -> str:
@@ -203,33 +201,6 @@ def dedupe_paragraphs(summary: str, similarity_threshold: float = 0.9) -> str:
             deduped.append(line.strip())
 
     return "\n\n".join(deduped)
-
-
-# Calculate the maximum new tokens allowed for the llm
-def get_max_new_token_usage(llm, prompt, context_window):
-    #  Compute prompt token usage
-    prompt_tokens = len(llm.tokenize(prompt.encode("utf-8")))
-
-    # Decide a safe max_new_tokens based on window
-    safe_headroom = 16
-    max_new_tokens = min(512, max(64, context_window - prompt_tokens - safe_headroom))
-
-    # Too many tokens — tell user to refresh
-    if prompt_tokens >= context_window:
-        return JsonResponse(
-            {
-                "response": ("⚠️ Context limit reached — please refresh this page to start a new chat."),
-                "usage": {
-                    "context_window": context_window,
-                    "prompt_tokens": prompt_tokens,
-                    "total_tokens": prompt_tokens,
-                    "pct_used": 100.0,
-                },
-            },
-            status=200,
-        )
-    else:
-        return prompt_tokens, max_new_tokens
 
 
 # Extract and normalize URL from a search snippet.
@@ -306,9 +277,16 @@ def clean_and_build_summary(summary, citation_block, formatted_snippet_block):
     # Add the citations to the summary
     summary += "\n\nSource(s):\n" + citation_block
 
-    # If no snippets or the model hallucinated an unsupported answer, replace with fallback
-    if "no results found" in formatted_snippet_block.lower() or "no sources found" in summary.lower() or not summary.strip():
-        summary = "I could not find any reliable sources to answer your question.\n\n" "Source(s): No sources found."
+    # No results or sources
+    if "no results found" in formatted_snippet_block.lower():
+        summary = "I could not find any reliable results to answer your question.\n\n"
+
+    if "no sources found." in citation_block.lower():
+        summary = "I could not find any reliable sources to answer your question.\n\n"
+
+    # Brave search api failure
+    if "brave search api failed" in formatted_snippet_block.lower() or "brave search api failed." in citation_block.lower():
+        summary = "The brave search api has failed."
 
     clean_result = summary
 

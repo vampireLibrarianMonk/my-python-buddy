@@ -203,4 +203,158 @@
 {% else %}
 <p class="muted">No findings recorded.</p>
 {% endif %}
+
+<!-- Floating Chat Bubble -->
+<div id="chatLauncher" class="chat-launcher" title="Chat with Assistant">💬</div>
+
+<!-- Floating Chat Panel -->
+<div id="chatPanel" class="chat-panel">
+  <div id="chatHeader">
+    <strong>Coding Assistant - {{ run.analyzer|title }}</strong>
+    <button id="toggleChat" title="Close">×</button>
+  </div>
+
+  <!-- Context usage meter -->
+  <div id="chatStats" class="chat-stats" aria-live="polite">
+    ctx: — / — (0%)
+    <div class="chat-stats-bar"><div class="chat-stats-fill" style="width:0%"></div></div>
+  </div>
+
+<div id="chatBody">
+  <p class="greeting">{{ chat_greeting }}</p>
+  <div id="chatMessages"></div>
+  <textarea id="chatInput" placeholder="Ask me about this {{ run.analyzer|title }} analysis..."></textarea>
+
+  <ul class="chat-tips">
+    <li>✍️ Define your question clearly. Vague queries return vague answers.</li>
+    <li>⚠️ AI-generated content. Verify independently.</li>
+  </ul>
+</div>
+
+<script>
+window.addEventListener("load", () => {
+  // Reset chat session on page reload
+  fetch("/api/chat_reset/", { method: "POST" })
+    .then((res) => res.json())
+    .then((data) => console.log("Chat reset:", data.status))
+    .catch((err) => console.warn("Chat reset failed:", err));
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const chatPanel = document.getElementById("chatPanel");
+  const launcher = document.getElementById("chatLauncher");
+  const closeBtn = document.getElementById("toggleChat");
+  const chatInput = document.getElementById("chatInput");
+  const chatMessages = document.getElementById("chatMessages");
+
+  if (!chatPanel || !launcher || !closeBtn || !chatInput || !chatMessages) {
+    console.warn("Chat elements missing — check template.");
+    return;
+  }
+
+  // --- Open/close logic ---
+  launcher.addEventListener("click", () => {
+    chatPanel.classList.add("open");
+    launcher.style.display = "none";
+  });
+  closeBtn.addEventListener("click", () => {
+    chatPanel.classList.remove("open");
+    launcher.style.display = "flex";
+  });
+
+  // --- Debug: Confirm panel position ---
+  console.log("chatPanel position:", getComputedStyle(chatPanel).position);
+
+  // --- Message sending ---
+  chatInput.addEventListener("keydown", async (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      const prompt = chatInput.value.trim();
+      if (!prompt) return;
+
+      // User message
+      const userMsg = document.createElement("div");
+      userMsg.textContent = "🧑 " + prompt;
+      chatMessages.appendChild(userMsg);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      chatInput.value = "";
+
+      // Bot placeholder + typing animation
+      const botMsg = document.createElement("div");
+      botMsg.textContent = "🤖 Processing";
+      chatMessages.appendChild(botMsg);
+
+      // Animated typing dots while waiting
+      let dots = 0;
+      const typingInterval = setInterval(() => {
+        dots = (dots + 1) % 4; // cycle between 0–3 dots
+        botMsg.textContent = "🤖 Processing" + ".".repeat(dots);
+      }, 400);
+
+      try {
+        const res = await fetch("{% url 'chat_llm' %}", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken"),
+          },
+          body: JSON.stringify({
+            prompt: prompt,
+            analyzer: "{{ run.analyzer|lower }}",
+            run_id: "{{ run.id }}",
+          }),
+        });
+            const data = await res.json();
+
+            // Stop animation and show response
+            clearInterval(typingInterval);
+            botMsg.textContent = data.response
+              ? "🤖 " + data.response
+              : "⚠️ " + (data.error || "No response");
+
+            // Update context usage meter if provided
+            const statsEl = document.getElementById("chatStats");
+            const barFill = statsEl?.querySelector(".chat-stats-fill");
+            if (data.usage && statsEl && barFill) {
+              const u = data.usage;
+              const pct = Math.min(100, Math.round((u.prompt_tokens / u.context_window) * 100));
+              statsEl.textContent = `ctx: ${u.prompt_tokens} / ${u.context_window} (${pct}%)`;
+              // re-append bar after textContent reset
+              const bar = document.createElement("div");
+              bar.className = "chat-stats-bar";
+              bar.appendChild(barFill);
+              statsEl.appendChild(bar);
+
+            barFill.style.width = pct + "%";
+
+            // Remove old color states
+            barFill.classList.remove("warn", "critical");
+
+            // Color thresholds
+            if (pct >= 95) barFill.classList.add("critical");
+            else if (pct >= 80) barFill.classList.add("warn");
+
+            statsEl.classList.toggle("warn", pct >= 80);
+            }
+      } catch (err) {
+        clearInterval(typingInterval);
+        botMsg.textContent = "⚠️ Network or server error";
+      }
+
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+  });
+
+  // --- CSRF helper ---
+  function getCookie(name) {
+    const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+    return match ? match[2] : "";
+  }
+});
+</script>
+
+
+
 {% endblock %}

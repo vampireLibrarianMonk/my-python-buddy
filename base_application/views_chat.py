@@ -19,6 +19,7 @@ from llama_cpp import Llama
 # Models
 from base_application.models import ChatSession, Run
 from base_application.views_chat_utilities import (
+    CODE_TERMS_PATTERN,
     SECURITY_TERMS_PATTERN,
     get_cleaned_code_response,
     get_cleaned_summary_response,
@@ -29,8 +30,9 @@ base_dir = Path(__file__).resolve().parent.parent
 
 # Load local fine-tuned model (GGUF) once at startup
 model_name = dj_settings.GGUF_FILE_NAME
+model_path = os.path.join(base_dir, "models", model_name)
 llm = Llama(
-    model_path=os.path.join(base_dir, "models", model_name),
+    model_path=model_path,
     n_ctx=4096,  # expand to match the model’s training context
     n_gpu_layers=-1,  # keep all layers on GPU (auto-fit)
     verbose=False,  # disables most llama.cpp logs
@@ -83,8 +85,6 @@ def chat_llm(request):
         return JsonResponse({"error": "POST required"}, status=405)
 
     try:
-        print("Incoming chat_llm request received.")
-
         # Retrieve data payload
         data = json.loads(request.body)
 
@@ -98,13 +98,7 @@ def chat_llm(request):
         # Detect conversational intent (Pathway 1)
         # Written this way in case I want to have more flexibility
         is_search = not re.search(
-            r"\b("
-            r"code|implement|program|write|rework|"
-            r"script|function|class|snippet|example|"
-            r"generate|create|refactor|debug|fix|"
-            r"build|develop|return|show.*code|"
-            r"output.*code|produce.*code"
-            r")\b",
+            CODE_TERMS_PATTERN,
             user_question,
             re.IGNORECASE,
         )
@@ -147,8 +141,8 @@ def chat_llm(request):
                 response=cleaned_response,
                 chat_type="search" if is_search else "code",
             )
-        except Exception as log_err:
-            print(f"Failed to record ChatSession: {log_err}")
+        except Exception as e:
+            return JsonResponse({"ChatSession_creation_fail": str(e)}, status=500)
 
         return JsonResponse(
             {
@@ -163,5 +157,4 @@ def chat_llm(request):
         )
 
     except Exception as e:
-        print(f"Unhandled exception in chat_llm: {e}")
-        return JsonResponse({"error": str(e)}, status=500)
+        return JsonResponse({"chat_llm_error": str(e)}, status=500)

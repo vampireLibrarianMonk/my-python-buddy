@@ -18,6 +18,9 @@
             {% if request.user.is_superuser %}
               <li><a href="/admin/">Admin</a></li>
             {% endif %}
+            {% if request.user.is_superuser %}
+              <li><a href="{% url 'healthz' %}">Health</a></li>
+            {% endif %}
 
             {% if request.user.is_authenticated %}
               <li class="muted small">Hi, {{ request.user.username }}</li>
