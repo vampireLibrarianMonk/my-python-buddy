@@ -34,20 +34,6 @@ from vulture import Vulture
 from .models import Finding, Run
 
 
-def detect_frameworks_in_file(file_path: str) -> set:
-    frameworks = set()
-
-    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-        content = f.read().lower()
-
-    if "import django" in content or "from django" in content:
-        frameworks.add("django")
-    if "import flask" in content or "from flask" in content:
-        frameworks.add("flask")
-
-    return frameworks
-
-
 def get_analyzer_version(analyzer):
     try:
         version = get_version(analyzer)
@@ -423,8 +409,6 @@ def run_semgrep_analyzer(run):
     try:
         file_path = run.submitted_file.file.path
 
-        frameworks = detect_frameworks_in_file(file_path)
-
         semgrep_configs = [
             ("p/default", "default"),  # General security checks
             ("p/owasp-top-ten", "owasp-top-ten"),  # OWASP Top Ten risks
@@ -432,11 +416,6 @@ def run_semgrep_analyzer(run):
             ("p/comment", "comment"),  # TODO/FIXME and notes
             ("p/security-audit", "security-audit"),  # Audit-focused findings
         ]
-
-        if "django" in frameworks:
-            semgrep_configs.append(("p/django", "django"))
-        if "flask" in frameworks:
-            semgrep_configs.append(("p/flask", "flask"))
 
         # Normalize older severities → modern equivalents
         severity_map = {
@@ -465,16 +444,7 @@ def run_semgrep_analyzer(run):
                 shell=False,
             )
 
-            # Semgrep exit codes: 0 = no findings, 1 = findings
-            if result.returncode not in (0, 1):
-                print(f"[Semgrep] {config} failed: {result.stderr.strip()}")
-                continue  # Don’t abort entire analyzer — just skip this pack
-
-            try:
-                data = json.loads(result.stdout or "{}")
-            except json.JSONDecodeError as je:
-                print(f"[Semgrep JSON Error] {config}: {je}")
-                continue
+            data = json.loads(result.stdout or "{}")
 
             for issue in data.get("results", []):
                 check_id = issue.get("check_id", "UNKNOWN")
@@ -484,7 +454,7 @@ def run_semgrep_analyzer(run):
                 start = issue.get("start", {}) or {}
                 line = int(start.get("line", 0) or 0)
                 col = int(start.get("col", 0) or 0)
-                rule_url = issue.get("extra", {}).get("metadata", {}).get("source", "https://semgrep.dev/docs")
+                rule_url = "https://semgrep.dev/r/"
 
                 key = (check_id, sev, line, msg)
                 if key in seen:
