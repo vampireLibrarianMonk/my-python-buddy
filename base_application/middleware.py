@@ -4,7 +4,7 @@
 # Django
 from django.contrib import messages
 from django.shortcuts import redirect
-from django.urls import resolve
+from django.urls import Resolver404, resolve
 
 
 class ForcePasswordChangeMiddleware:
@@ -31,7 +31,7 @@ class ForcePasswordChangeMiddleware:
             try:
                 # Resolve current route name for conditional redirection
                 current_name = resolve(request.path_info).url_name
-            except Exception:
+            except Resolver404:
                 current_name = None
 
             # Redirect flagged users away from restricted pages

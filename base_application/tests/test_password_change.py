@@ -1,13 +1,18 @@
 # Native
-import os
 import secrets
 
 # Django
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.messages.storage.fallback import FallbackStorage
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import RequestFactory, TestCase
+from django.urls import Resolver404
 from django.utils.crypto import get_random_string
+
+# Middleware
+import base_application.middleware as mw
+from base_application.middleware import ForcePasswordChangeMiddleware
 
 # Models
 from base_application.models import AccountProfile
@@ -16,24 +21,15 @@ from base_application.models import AccountProfile
 from base_application.views import MustChangePasswordView
 
 
-def _env_or(default_factory, *env_keys):
-    """Return the first present environment var among environment_keys, else call default_factory()."""
-    for k in env_keys:
-        v = os.getenv(k)
-        if v:
-            return v
-    return default_factory()
-
-
 class MustChangePasswordHookTests(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
         User = get_user_model()
 
         # Use environment overrides when provided; otherwise generate deterministic-safe test values.
-        username = _env_or(lambda: f"tester_{get_random_string(8)}", "TEST_USERNAME")
-        email = _env_or(lambda: f"{get_random_string(6)}@example.invalid", "TEST_EMAIL")
-        old_password = _env_or(lambda: secrets.token_urlsafe(16), "TEST_PASSWORD")
+        username = f"tester_{get_random_string(8)}"
+        email = f"{get_random_string(6)}@example.invalid"
+        old_password = secrets.token_urlsafe(16)
 
         self.user = User.objects.create_user(
             username=username,
@@ -58,7 +54,7 @@ class MustChangePasswordHookTests(TestCase):
 
         # New password: from environment if provided, else securely generated.
         # Ensure the old and new password are not equal.
-        new_password = _env_or(lambda: secrets.token_urlsafe(18), "TEST_NEW_PASSWORD")
+        new_password = secrets.token_urlsafe(18)
         if new_password == self.old_password:
             new_password = secrets.token_urlsafe(20)
 
@@ -82,3 +78,76 @@ class MustChangePasswordHookTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertIn("/accounts/password_change/done/", response.url)
+
+
+class TestForcePasswordChangeMiddleware(TestCase):
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.middleware = ForcePasswordChangeMiddleware(lambda r: r)
+
+        User = get_user_model()
+
+        username = f"tester_{get_random_string(8)}"
+        email = f"{get_random_string(6)}@example.invalid"
+        old_password = secrets.token_urlsafe(16)
+
+        self.user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=old_password,
+        )
+
+        self.old_password = old_password
+
+        self.profile = AccountProfile.objects.get(user=self.user)
+        self.profile.must_change_password = True
+        self.profile.save()
+
+    def _add_messages(self, request):
+        setattr(request, "session", {})
+        messages = FallbackStorage(request)
+        setattr(request, "_messages", messages)
+
+    #  When user is None it must return get_response(request)
+    def test_user_none_returns_normal_flow(self):
+        request = self.factory.get("/")
+        request.user = None
+
+        response = self.middleware(request)
+        self.assertEqual(response, request)
+
+    # Route resolution will fail when current_name is None
+    def test_route_resolve_exception_sets_current_name_none(self):
+        request = self.factory.get("/bad!route")
+        request.user = self.user
+
+        original_resolve = mw.resolve
+
+        def bad_resolve(path, *args, **kwargs):
+            raise Resolver404
+
+        mw.resolve = bad_resolve
+
+        try:
+            self._add_messages(request)
+            response = self.middleware(request)
+        finally:
+            mw.resolve = original_resolve
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/password_change", response.url)
+
+    # Flagged user must redirect with warning message
+    def test_flagged_user_redirects_with_message(self):
+        request = self.factory.get("/dashboard")
+        request.user = self.user  # real profile
+
+        self._add_messages(request)
+        response = self.middleware(request)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/password_change", response.url)
+
+        stored_messages = list(request._messages)
+        self.assertTrue(any("Please set a new password" in str(m) for m in stored_messages))
