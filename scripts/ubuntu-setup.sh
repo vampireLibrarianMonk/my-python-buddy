@@ -99,7 +99,9 @@ if [[ "${FORCE_REGEN:-0}" -eq 1 || ! -f "$CERT" || ! -f "$KEY" ]]; then
   mv "$tmpdir/server.key" "$KEY"
   mv "$tmpdir/server.crt" "$CERT"
   chmod 600 "$KEY"
+  chown my-python-buddy:my-python-buddy "$KEY"
   chmod 444 "$CERT"
+  chown my-python-buddy:my-python-buddy "$CERT"
 else
   log "Using existing cert/key at $CERT_DIR"
 fi
@@ -213,6 +215,15 @@ echo "    Public IP:         ${PUB_IP:-<none>}"
 echo "    Public DNS:        ${PUB_DNS:-<none>}"
 echo "    .env created with cloud-aware ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS."
 echo "    mkcert CA Root:    $(mkcert -CAROOT 2>/dev/null || echo '<not-found>')"
+
+echo "Installing REDIS Server..."
+
+sudo apt update && sudo apt install -y redis-server
+echo "Redis installed."
+echo "Enabling Redis on boot..."
+sudo systemctl enable redis
+sudo systemctl is-active --quiet redis && echo "Redis is running." || echo "Redis is NOT running."
+redis-cli ping | grep -q PONG && echo "Redis is responding." || echo "Redis is NOT responding."
 
 echo "Installing CUDA and NVIDIA Driver..."
 

@@ -245,10 +245,10 @@ echo "EIP_ALLOCATION_ID=${EIP_ALLOCATION_ID}" >> .env
 echo "Elastic IP Address Allocation ID: ${EIP_ALLOCATION_ID} created with address ${ELASTIC_IP_ADDRESS}."
 
 # Wait for instance to enter 'running' state
-echo "Waiting for EC2 instance to reach 'running' state..."
-aws ec2 wait instance-running --instance-ids "$EC2_INSTANCE_ID"
+echo "Waiting for EC2 system checks to pass..."
+aws ec2 wait instance-status-ok --instance-ids "$EC2_INSTANCE_ID"
 
-echo "Instance is running. Now associating Elastic IP..."
+echo "Instance is fully ready. Associating Elastic IP..."
 aws ec2 associate-address --public-ip "$ELASTIC_IP_ADDRESS" --instance-id "$EC2_INSTANCE_ID"
 
 echo "Elastic IP successfully associated."
