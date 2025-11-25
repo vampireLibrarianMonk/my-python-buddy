@@ -14,11 +14,12 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
-from base_application.views import MustChangePasswordView
+from base_application.views import MustChangePasswordView, healthcheck_view
 
 urlpatterns = [
     # Admin
     path("admin/", admin.site.urls),
+    path("healthz/", healthcheck_view, name="healthz"),  # Application system checks and associated versions
     # App routes
     path("", include("base_application.urls")),
     # Auth (centralized here)
@@ -41,6 +42,6 @@ urlpatterns = [
 ]
 
 # Development Only (warning static serving must be replaced by a more robust solution prior to moving to production)
-# Nginx, Apache, or CloudFront fopr example
+# Nginx, Apache, or CloudFront for example
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
