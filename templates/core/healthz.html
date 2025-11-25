@@ -1,0 +1,126 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>System Health Dashboard</title>
+    <link href="{% static 'core/css/healthz.css' %}" rel="stylesheet">
+</head>
+<body>
+<!-- Dashboard container -->
+<div class="health-container">
+    <h1>Health Status of {{ summary.app.name }}</h1>
+    <p class="env">Environment: {{ summary.app.env }} | Build: {{ summary.app.build }}</p>
+
+    <!-- Application status -->
+    <section class="card ok">
+        <h2>Application</h2>
+        <ul>
+            <li><strong>Version:</strong> {{ summary.app.version }}</li>
+            <li><strong>Debug:</strong> {{ summary.app.debug }}</li>
+        </ul>
+    </section>
+
+    <!-- Dependencies -->
+    <section class="card">
+        <h2>Dependencies</h2>
+        <ul>
+            <li><strong>Redis:</strong>
+                {% if summary.dependencies.redis.status == 'ok' %}
+                <span class="status ok">OK</span>
+                v{{ summary.dependencies.redis.version }} ({{ summary.dependencies.redis.connected_clients }} clients)
+                {% else %}
+                <span class="status fail">FAIL</span>
+                {{ summary.dependencies.redis.error }}
+                {% endif %}
+            </li>
+        </ul>
+    </section>
+
+    <!-- System Metrics -->
+    <section class="card">
+        <h2>System</h2>
+        <ul>
+            <li><strong>CPU:</strong>
+                {{ summary.system.cpu.model }} —
+                {{ summary.system.cpu.usage_percent }}% load,
+                {{ summary.system.cpu.cores }} cores @
+                {{ summary.system.cpu.speed_mhz }} MHz
+            </li>
+            <li><strong>Memory:</strong>
+                {{ summary.system.memory.percent }}% used
+                ({{ summary.system.memory.used_gb }} / {{ summary.system.memory.total_gb }} GB)
+                {{ summary.system.memory.type }}
+            </li>
+            {% if summary.system.gpu.status == 'ok' %}
+            <li><strong>GPU:</strong>
+                {% for gpu in summary.system.gpu.devices %}
+                {{ gpu.name }} — {{ gpu.utilization_percent }}% load,
+                {{ gpu.memory_used_gb }} / {{ gpu.memory_total_gb }} GB used
+                {% if not forloop.last %}<br>{% endif %}
+                {% endfor %}
+            </li>
+            {% else %}
+            <li><strong>GPU:</strong> {{ summary.system.gpu.message }}</li>
+            {% endif %}
+        </ul>
+    </section>
+
+    <!-- Runtime Info -->
+    <section class="card">
+        <h2>Runtime</h2>
+        <ul>
+            {% for key, value in summary.runtime.items %}
+            <li><strong>{{ key|lower }}:</strong> {{ value }}</li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    <!-- LLlama Model Inference Smoke Test -->
+    <section class="card">
+        <h2>LLama Model Inference</h2>
+        {% if summary.llama %}
+        <ul>
+            <li><strong>Status:</strong>
+                {% if summary.llama.status == 'ok' %}
+                <span class="status ok">OK</span>
+                {% else %}
+                <span class="status fail">FAIL</span>
+                {{ summary.llama.error }}
+                {% endif %}
+            </li>
+            {% if summary.llama.status == 'ok' %}
+            <li><strong>Load Time:</strong> {{ summary.llama.load_time_sec }} sec</li>
+            <li><strong>Model Name:</strong> {{ summary.llama.model_name }}</li>
+            <li><strong>GPU(s) Used:</strong>
+                <div class="inference-gpu">
+                    {{ summary.llama.gpu_used }}
+                </div>
+            </li>
+            <li><strong>Sample Output:</strong>
+                <div class="inference-output">
+                    {{ summary.llama.sample_output }}
+                </div>
+            </li>
+            {% endif %}
+        </ul>
+        {% else %}
+        <p>No LLaMA inference data available.</p>
+        {% endif %}
+    </section>
+
+    <footer>
+        <p>Updated: {{ summary.timestamp|date:"Y-m-d H:i:s" }}</p>
+    </footer>
+</div>
+</body>
+</html>
+
+<script>
+    // Reload the page every second
+    setInterval(() => {
+      window.location.reload();
+    }, 5000);
+</script>
+
