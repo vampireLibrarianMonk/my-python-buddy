@@ -43,7 +43,7 @@ llm = Llama(
 # wget https://developer.download.nvidia.com/compute/cuda/12.4.1/local_installers/cuda_12.4.1_550.54.15_linux.run
 # sudo sh cuda_12.4.1_550.54.15_linux.run
 # conda env create -f environment.yml
-# CMAKE_ARGS="-DGGML_CUDA=on" pip install llama-cpp-python
+# CMAKE_ARGS="-DGGML_CUDA=on" PIP_BUILD_ARGS="--parallel $(nproc)" pip install llama-cpp-python
 # export LD_LIBRARY_PATH=/usr/local/cuda-12.4/lib64:$LD_LIBRARY_PATH
 # Test via:
 # python -c "from llama_cpp import Llama; Llama(model_path='', n_gpu_layers=1, verbose=True)" 2>&1 | grep "Device"
