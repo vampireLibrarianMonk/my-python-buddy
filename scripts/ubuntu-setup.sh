@@ -221,7 +221,8 @@ echo "Installing REDIS Server..."
 sudo apt update && sudo apt install -y redis-server
 echo "Redis installed."
 echo "Enabling Redis on boot..."
-sudo systemctl enable redis
+sudo systemctl enable redis-server
+sudo systemctl start redis-server
 sudo systemctl is-active --quiet redis && echo "Redis is running." || echo "Redis is NOT running."
 redis-cli ping | grep -q PONG && echo "Redis is responding." || echo "Redis is NOT responding."
 
