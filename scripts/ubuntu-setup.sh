@@ -162,7 +162,7 @@ APP_ENV=dev
 APP_VERSION=$VERSION
 APP_BUILD=cloud
 DJANGO_SECRET_KEY=$DJANGO_SECRET_KEY
-DJANGO_DEBUG=False
+DJANGO_DEBUG=True
 DJANGO_ALLOWED_HOSTS=$ALLOWED
 DJANGO_CSRF_TRUSTED_ORIGINS=$CSRF
 EOF
@@ -240,10 +240,12 @@ sudo modprobe nvidia
 # Verify that the driver is active
 nvidia-smi || echo "nvidia-smi failed: NVIDIA driver may not be loaded properly"
 
-# Set up environment variables system-wide
 sudo tee /etc/profile.d/cuda.sh > /dev/null << 'EOF'
+# Prepend CUDA toolkit binaries (nvcc, cuda tools) to PATH so they are available system-wide
 export PATH=/usr/local/cuda/bin:$PATH
-export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+
+# Safe LD_LIBRARY_PATH expansion even if it was previously undefined
+export LD_LIBRARY_PATH=/usr/local/cuda-12.4/lib64:${LD_LIBRARY_PATH:-}
 EOF
 
 # Apply environment changes for current session

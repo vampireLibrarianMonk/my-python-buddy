@@ -89,11 +89,11 @@ for f in "${FOUND_FILES[@]}"; do
     echo "[*] Uploading: $BASENAME"
     aws s3 cp "$f" "s3://${BUCKET_NAME}/${BASENAME}"
 
-    echo "[*] Creating 14-day presigned URL for: $BASENAME"
-    PRESIGN_URL=$(aws s3 presign "s3://${BUCKET_NAME}/${BASENAME}" --expires-in 1209600)
+    echo "[*] Creating presigned URL for: $BASENAME"
+    PRESIGN_URL=$(aws s3 presign "s3://${BUCKET_NAME}/${BASENAME}" --expires-in 604800)
 
     echo "   Presigned URL:"
-    echo "   $PRESIGN_URL"
+    echo "   curl -o /home/my-python-buddy/my-python-buddy/models/$BASENAME \"$PRESIGN_URL\""
     echo
 done
 
