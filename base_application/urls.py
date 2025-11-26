@@ -10,7 +10,6 @@ from .views import (
     bandit_status_json,
     delete_file_view,
     dodgy_status_json,
-    healthcheck_view,
     mypy_status_json,
     run_analyzer,
     run_detail,
@@ -22,8 +21,6 @@ from .views import (
 
 # Pathway routing for base_application
 urlpatterns = [
-    # Application system checks and associated versions
-    path("healthz/", healthcheck_view, name="healthz"),  # Admin only
     # File menu
     path("", upload_view, name="upload"),
     # File upload success
