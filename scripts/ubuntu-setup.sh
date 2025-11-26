@@ -30,16 +30,16 @@ echo "Branch '$BRANCH' is valid and exists on remote."
 
 # Create user 'my-python-buddy' if not exists
 if ! id "my-python-buddy" &>/dev/null; then
-  sudo adduser --disabled-password --gecos "" my-python-buddy
-  sudo usermod -aG sudo my-python-buddy
+  adduser --disabled-password --gecos "" my-python-buddy
+  usermod -aG my-python-buddy
 fi
 
 # Set HOME and PROJECT_DIR for user context
 USER_HOME="/home/my-python-buddy"
 PROJECT_DIR="$USER_HOME/my-python-buddy"
 
-sudo mkdir -p /home/my-python-buddy
-sudo chown my-python-buddy:my-python-buddy /home/my-python-buddy
+mkdir -p /home/my-python-buddy
+chown my-python-buddy:my-python-buddy /home/my-python-buddy
 
 # EC2 Ubuntu user-data: install dependencies, clone repo/branch and create .env with cloud-aware hosts/origins.
 echo "[*] Updating packages and installing prerequisites..."
@@ -112,7 +112,7 @@ openssl x509 -in "$CERT" -noout -text | grep -A2 "Subject Alternative Name" || t
 [[ -f "$CERT" && -f "$KEY" ]] || { echo "[ERROR] TLS cert or key not found."; exit 1; }
 
 # Everything below runs as 'my-python-buddy'
-sudo -u my-python-buddy env PUB_IP="$PUB_IP" PUB_DNS="$PUB_DNS" USER_HOME="$USER_HOME" BRANCH="$BRANCH" REPO="$REPO" bash <<'EOF'
+-u my-python-buddy env PUB_IP="$PUB_IP" PUB_DNS="$PUB_DNS" USER_HOME="$USER_HOME" BRANCH="$BRANCH" REPO="$REPO" bash <<'EOF'
 #!/bin/bash
 set -euo pipefail
 
@@ -168,7 +168,7 @@ DJANGO_CSRF_TRUSTED_ORIGINS=$CSRF
 EOF
 
 echo "[*] (Optional) Trust mkcert local certificate authority for this host"
-sudo mkcert -install || true
+mkcert -install || true
 
 # Install Miniconda
 echo "[*] Installing Miniconda ..."
@@ -218,12 +218,12 @@ echo "    mkcert CA Root:    $(mkcert -CAROOT 2>/dev/null || echo '<not-found>')
 
 echo "Installing REDIS Server..."
 
-sudo apt update && sudo apt install -y redis-server
+apt update && apt install -y redis-server
 echo "Redis installed."
 echo "Enabling Redis on boot..."
-sudo systemctl enable redis-server
-sudo systemctl start redis-server
-sudo systemctl is-active --quiet redis && echo "Redis is running." || echo "Redis is NOT running."
+systemctl enable redis-server
+systemctl start redis-server
+systemctl is-active --quiet redis && echo "Redis is running." || echo "Redis is NOT running."
 redis-cli ping | grep -q PONG && echo "Redis is responding." || echo "Redis is NOT responding."
 
 echo "Installing CUDA and NVIDIA Driver..."
@@ -232,15 +232,15 @@ echo "Installing CUDA and NVIDIA Driver..."
 wget https://developer.download.nvidia.com/compute/cuda/12.4.1/local_installers/cuda_12.4.1_550.54.15_linux.run
 
 # Run the installer silently (designated CC version, toolkit, driver, override warnings)
-sudo CC=/usr/bin/gcc-12 CXX=/usr/bin/g++-12 sh cuda_12.4.1_550.54.15_linux.run --silent --toolkit --driver --override
+CC=/usr/bin/gcc-12 CXX=/usr/bin/g++-12 sh cuda_12.4.1_550.54.15_linux.run --silent --toolkit --driver --override
 
 # Load the NVIDIA kernel module
-sudo modprobe nvidia
+modprobe nvidia
 
 # Verify that the driver is active
 nvidia-smi || echo "nvidia-smi failed: NVIDIA driver may not be loaded properly"
 
-sudo tee /etc/profile.d/cuda.sh > /dev/null << 'EOF'
+tee /etc/profile.d/cuda.sh > /dev/null << 'EOF'
 # Prepend CUDA toolkit binaries (nvcc, cuda tools) to PATH so they are available system-wide
 export PATH=/usr/local/cuda/bin:$PATH
 
@@ -258,6 +258,9 @@ conda activate my-python-buddy
 # Install llama-cpp-python with CUDA support using all available processors
 CMAKE_ARGS="-DGGML_CUDA=on" PIP_BUILD_ARGS="--parallel $(nproc)" pip install llama-cpp-python
 
+# Ensure my-python-buddy owns its server folder
+chown -R my-python-buddy:my-python-buddy /home/my-python-buddy
+
 # Reboot for the required activation of the driver
 echo "Rebooting to activate the NVIDIA driver..."
-sudo reboot
+reboot
