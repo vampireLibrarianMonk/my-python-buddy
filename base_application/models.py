@@ -35,26 +35,28 @@ class SubmittedFile(models.Model):
     sha256 = models.CharField(primary_key=True, max_length=64, editable=False)
 
     # The actual file under MEDIA_ROOT/uploads/
-    file = models.FileField(upload_to="uploads/")
+    file = models.FileField(upload_to="uploads/", editable=False)
 
     # Bookkeeping
-    original_name = models.CharField(max_length=255)
-    saved_name = models.CharField(max_length=255)
-    uploaded_at = models.DateTimeField(auto_now_add=True)
+    original_name = models.CharField(max_length=255, editable=False)
+    saved_name = models.CharField(max_length=255, editable=False)
+    uploaded_at = models.DateTimeField(auto_now_add=True, editable=False)
 
     # Analysis tracking
     analysis_status = models.CharField(
         max_length=20,
         choices=AnalysisStatus.choices,
         default=AnalysisStatus.NOT_REQUESTED,
+        editable=False,
     )
     analysis_analyzers = models.CharField(  # comma-separated keys reserved for analyzers, e.g. "bandit"
         max_length=255,
         blank=True,
         default="",
+        editable=False,
     )
-    analysis_findings = models.PositiveIntegerField(default=0)
-    analyzed_at = models.DateTimeField(null=True, blank=True)
+    analysis_findings = models.PositiveIntegerField(default=0, editable=False)
+    analyzed_at = models.DateTimeField(null=True, blank=True, editable=False)
 
     class Meta:
         ordering = ["-uploaded_at"]
@@ -104,14 +106,14 @@ class Run(models.Model):
         COMPLETED = "COMPLETED", "Completed"
         ERRORED = "ERRORED", "Errored"
 
-    submitted_file = models.ForeignKey("SubmittedFile", on_delete=models.CASCADE, related_name="runs")
-    analyzer = models.CharField(max_length=15)
-    analyzer_version = models.CharField(max_length=15, null=True)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
-    started_at = models.DateTimeField(null=True, blank=True)
-    completed_at = models.DateTimeField(null=True, blank=True)
-    findings_count = models.IntegerField(default=0)
-    severity_counts = models.JSONField(default=severity_default, blank=True)
+    submitted_file = models.ForeignKey("SubmittedFile", on_delete=models.CASCADE, related_name="runs", editable=False)
+    analyzer = models.CharField(max_length=15, editable=False)
+    analyzer_version = models.CharField(max_length=15, null=True, editable=False)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, editable=False)
+    started_at = models.DateTimeField(null=True, blank=True, editable=False)
+    completed_at = models.DateTimeField(null=True, blank=True, editable=False)
+    findings_count = models.IntegerField(default=0, editable=False)
+    severity_counts = models.JSONField(default=severity_default, blank=True, editable=False)
 
     class Meta:
         ordering = ["-started_at"]
@@ -121,18 +123,18 @@ class Run(models.Model):
 
 
 class Finding(models.Model):
-    run = models.ForeignKey("Run", on_delete=models.CASCADE, related_name="findings")
-    severity = models.CharField(max_length=20)
-    rule_id = models.CharField(max_length=50)
-    title = models.CharField(max_length=255)
-    message = models.TextField()
-    line = models.IntegerField()
-    column = models.IntegerField(default=0)
-    reference = models.URLField(blank=True)
+    run = models.ForeignKey("Run", on_delete=models.CASCADE, related_name="findings", editable=False)
+    severity = models.CharField(max_length=20, editable=False)
+    rule_id = models.CharField(max_length=50, editable=False)
+    title = models.CharField(max_length=255, editable=False)
+    message = models.TextField(editable=False)
+    line = models.IntegerField(editable=False)
+    column = models.IntegerField(default=0, editable=False)
+    reference = models.URLField(blank=True, editable=False)
 
     # New fields to track exact file
-    file_hash = models.CharField(max_length=64, db_index=True, null=True, blank=True)
-    file_name = models.CharField(max_length=255, null=True, blank=True)
+    file_hash = models.CharField(max_length=64, db_index=True, null=True, blank=True, editable=False)
+    file_name = models.CharField(max_length=255, null=True, blank=True, editable=False)
 
     class Meta:
         ordering = ["line", "column"]
@@ -154,18 +156,19 @@ class ChatSession(models.Model):
         blank=True,
         related_name="chat_sessions",
     )
-    file_name = models.CharField(max_length=255, blank=True)
-    file_hash = models.CharField(max_length=64, blank=True, db_index=True)
-    analyzer = models.CharField(max_length=50, blank=True)
-    analyzer_version = models.CharField(max_length=25, blank=True)
-    prompt = models.TextField(help_text="User input text")
-    response = models.TextField(help_text="Model response")
-    created_at = models.DateTimeField(auto_now_add=True)
+    file_name = models.CharField(max_length=255, blank=True, editable=False)
+    file_hash = models.CharField(max_length=64, blank=True, db_index=True, editable=False)
+    analyzer = models.CharField(max_length=50, blank=True, editable=False)
+    analyzer_version = models.CharField(max_length=25, blank=True, editable=False)
+    prompt = models.TextField(help_text="User input text", editable=False)
+    response = models.TextField(help_text="Model response", editable=False)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
 
     chat_type = models.CharField(
         max_length=10,
         choices=ChatType.choices,
         default=ChatType.SEARCH,
+        editable=False,
     )
 
     class Meta:
