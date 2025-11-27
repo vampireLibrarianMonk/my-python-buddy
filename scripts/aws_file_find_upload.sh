@@ -28,7 +28,7 @@ for fname in "${EXPECTED_FILES[@]}"; do
     if [[ -f "$FULL_PATH" ]]; then
         FOUND_FILES+=("$FULL_PATH")
     else
-        echo "ERROR: Missing required file: $fullname"
+        echo "ERROR: Missing required file: $fname"
         exit 1
     fi
 done

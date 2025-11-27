@@ -31,7 +31,7 @@ echo "Branch '$BRANCH' is valid and exists on remote."
 # Create user 'my-python-buddy' if not exists
 if ! id "my-python-buddy" &>/dev/null; then
   adduser --disabled-password --gecos "" my-python-buddy
-  usermod -aG my-python-buddy
+  sudo usermod -aG my-python-buddy
 fi
 
 # Set HOME and PROJECT_DIR for user context
