@@ -88,24 +88,27 @@ Superuser created successfully.
 ### Regular User Creation (modify the three environment variables)
 
 ```bash
-export DJANGO_SUPERUSER_USERNAME="regularUser"
-export DJANGO_SUPERUSER_EMAIL="UserReg@anemail.com"
-export DJANGO_SUPERUSER_PASSWORD=# Fill in password
+export DJANGO_USERNAME="RegularUser"
+export DJANGO_EMAIL="UserReg@anemail.com"
+export DJANGO_PASSWORD="$(openssl rand -base64 12 | tr -dc 'A-Za-z0-9' | head -c16)"
 
-python manage.py shell -c "
+python manage.py shell -c '
 from django.contrib.auth import get_user_model;
 from base_application.models import AccountProfile;
 import os;
 U = get_user_model();
 u = U.objects.create_user(
-    os.environ['DJANGO_SUPERUSER_USERNAME'],
-    os.environ['DJANGO_SUPERUSER_EMAIL'],
-    os.environ['DJANGO_SUPERUSER_PASSWORD']
+    os.environ["DJANGO_USERNAME"],
+    os.environ["DJANGO_EMAIL"],
+    os.environ["DJANGO_PASSWORD"]
 );
 p = AccountProfile.objects.get(user=u);
 p.must_change_password = True;
-p.save()
-"
+p.save();
+print("Created user:", u.username)
+print("Password used:", os.environ["DJANGO_PASSWORD"])
+'
+
 ```
 
 ---
@@ -144,7 +147,7 @@ Conda provides a way for the developer to reproduce, reliably, their environment
 
 ```bash
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash ~/Miniconda3-latest-Linux-x86_64.sh -b -p "$HOME/miniconda3" && \
+bash ./Miniconda3-latest-Linux-x86_64.sh -b -p "$HOME/miniconda3" && \
   eval "$("$HOME/miniconda3/bin/conda" shell.bash hook)" && \
   "$HOME/miniconda3/bin/conda" init bash && \
   conda --version
@@ -160,7 +163,7 @@ conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 ### Create and activate environment
 
 ```bash
-conda create -f environment.yml
+conda env create -f environment.yml
 conda activate my-python-buddy
 ```
 
@@ -235,6 +238,14 @@ python manage.py test base_application.tests.test_upload.UploadViewTests -v 2
 
 ```bash
 python manage.py test base_application.tests.test_upload.UploadViewTests.test_accepts_valid_py -v 2
+```
+
+### Coverage Reporting
+
+```bash
+coverage run --source=base_application manage.py test
+coverage report -m                   # Neat line by line report matrix
+coverage html -d coverage_html       # Generate html report to browse
 ```
 
 ### Useful flags

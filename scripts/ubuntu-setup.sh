@@ -112,7 +112,7 @@ openssl x509 -in "$CERT" -noout -text | grep -A2 "Subject Alternative Name" || t
 [[ -f "$CERT" && -f "$KEY" ]] || { echo "[ERROR] TLS cert or key not found."; exit 1; }
 
 # Everything below runs as 'my-python-buddy'
--u my-python-buddy env PUB_IP="$PUB_IP" PUB_DNS="$PUB_DNS" USER_HOME="$USER_HOME" BRANCH="$BRANCH" REPO="$REPO" bash <<'EOF'
+sudo -u my-python-buddy env PUB_IP="$PUB_IP" PUB_DNS="$PUB_DNS" USER_HOME="$USER_HOME" BRANCH="$BRANCH" REPO="$REPO" bash <<'EOF'
 #!/bin/bash
 set -euo pipefail
 

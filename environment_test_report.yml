@@ -89,6 +89,7 @@ dependencies:
       - jsonschema==4.20.0
       - jsonschema-specifications==2025.9.1
       - maison==1.4.3
+      - markdown==3.10
       - markdown-it-py==4.0.0
       - markupsafe==3.0.3
       - mcp==1.12.2
@@ -98,6 +99,7 @@ dependencies:
       - mypy-extensions==1.1.0
       - nodeenv==1.9.1
       - numpy==2.2.6
+      - odfpy==1.4.1
       - opentelemetry-api==1.37.0
       - opentelemetry-exporter-otlp-proto-common==1.37.0
       - opentelemetry-exporter-otlp-proto-http==1.37.0
