@@ -30,3 +30,9 @@ logs/
 
 # Models
 !models/.gitkeep
+
+# Export of markdown odt
+documentation/test/images/all_tests.odt
+
+# Export of markdown pngs
+documentation/test/images/**/*.png
