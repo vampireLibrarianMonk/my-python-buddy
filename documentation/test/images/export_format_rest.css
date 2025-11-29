@@ -1,0 +1,136 @@
+/* Text rules maintain clarity and preserve readable markdown formatting for the current dark mode used */
+body {
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    color: #e2e2e2 !important;
+}
+
+/* Table cells left aligned and normal spacing */
+td, th {
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    color: #e2e2e2 !important;
+    text-align: left !important;
+}
+
+/* Fully collapse list spacing */
+ul, ol {
+    margin: 0 !important;
+    padding: 0 0 0 12px !important;
+}
+
+/* Tight list items */
+li {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.0 !important;
+}
+
+/* If <p> appears inside an <li>, collapse it too */
+li p {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Remove extra spacing created by bullet markers */
+li::marker {
+    font-size: 0.85em !important;
+    padding: 0 !important;
+}
+
+/* Body styling aligns with dark mode using wider readable layout */
+body {
+    background-color: #1e1f22 !important;
+    max-width: 1850px !important;
+    margin: 0 auto !important;
+}
+
+/* Code blocks display clearly using styled dark theme formatting */
+pre {
+    white-space: pre !important;
+    overflow-x: auto !important;
+    background-color: #2a2d31 !important;
+    border: 1px solid #3b3f45 !important;
+    border-radius: 6px !important;
+    padding: 14px !important;
+    font-size: 0.95em !important;
+    color: #e6e6e6 !important;
+}
+
+/* Inline code highlights text with contrast and subtle padding */
+code {
+    background-color: #2f3237 !important;
+    color: #dcdcdc !important;
+    border-radius: 4px !important;
+    padding: 2px 5px !important;
+    white-space: break-spaces !important;
+}
+
+/* Reduce extra browser-inserted spacing under headings */
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 0px !important;
+    margin-bottom: 0px !important;
+    padding-bottom: 0px !important;
+}
+
+p {
+    white-space: nowrap !important;
+    margin: 8px 0 !important;
+    padding: 0 !important;
+}
+
+p strong {
+    display: inline !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+p strong:first-child {
+    display: inline !important;
+}
+
+p strong:not(:first-child)::before {
+    content: "" !important;
+    display: block !important;
+}
+
+/* Collapse margin between headings and following list */
+h1 + ul, h2 + ul, h3 + ul, h4 + ul, h5 + ul, h6 + ul,
+h1 + ol, h2 + ol, h3 + ol, h4 + ol, h5 + ol, h6 + ol {
+    margin-top: 0px !important;
+}
+
+/* Tighten the first bullet directly under a heading */
+h1 + ul li, h2 + ul li, h3 + ul li, h4 + ul li, h5 + ul li, h6 + ul li {
+    margin-top: 0px !important;
+}
+
+/* Hyperlinks use a subtle blue tone matching dark theme style */
+a {
+    color: #6ca8ff !important;
+}
+
+/* Table design stabilizes layout and ensures consistent cell distribution */
+table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    table-layout: fixed !important;
+}
+
+/* Blockquotes highlight referenced text with color and clear visual anchors */
+blockquote {
+    border-left: 4px solid #4a90e2 !important;
+    padding-left: 12px !important;
+    color: #c7c7c7 !important;
+}
+
+/* Scrollbars use modern dark styling with rounded thumb edges */
+::-webkit-scrollbar {
+    width: 8px !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #4a4d52 !important;
+    border-radius: 4px !important;
+}

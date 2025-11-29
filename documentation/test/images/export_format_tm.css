@@ -1,0 +1,124 @@
+/* Text rules maintain clarity and preserve readable markdown formatting for the current dark mode used */
+body, p, li {
+    white-space: pre-wrap !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    color: #e2e2e2 !important;
+}
+
+/* Table cells centered and normal spacing */
+td, th {
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    color: #e2e2e2 !important;
+    text-align: center !important;
+}
+
+/* First column custom width for datetime */
+table th:first-child,
+table td:first-child {
+    width: 220px !important;
+}
+
+/* Middle columns except the sixth column */
+table th:nth-child(n+2):not(:nth-child(6)):not(:last-child),
+table td:nth-child(n+2):not(:nth-child(6)):not(:last-child) {
+    min-width: 150px !important;
+}
+
+/* Sixth column uses custom width configuration */
+table th:nth-child(6),
+table td:nth-child(6) {
+    min-width: 450px !important;
+}
+
+/* Final column spacing for detailed commentary*/
+table th:last-child,
+table td:last-child {
+    width: 250px !important;
+}
+
+/* Tight paragraph spacing */
+p {
+    margin-top: 2px !important;
+    margin-bottom: 4px !important;
+}
+
+/* Keep out unnecessary white space */
+li {
+    margin-top: 1px !important;
+    margin-bottom: 1px !important;
+}
+
+/* Most efficient use of space for unordered lists */
+ul {
+    margin-top: 0px !important;
+    margin-bottom: 0px !important;
+}
+
+/* Body styling aligns with dark mode using wider readable layout */
+body {
+    background-color: #1e1f22 !important;
+    max-width: 1850px !important;
+    margin: 0 auto !important;
+}
+
+/* Code blocks display clearly using styled dark theme formatting */
+pre {
+    white-space: pre !important;
+    overflow-x: auto !important;
+    background-color: #2a2d31 !important;
+    border: 1px solid #3b3f45 !important;
+    border-radius: 6px !important;
+    padding: 14px !important;
+    font-size: 0.95em !important;
+    color: #e6e6e6 !important;
+}
+
+/* Inline code highlights text with contrast and subtle padding */
+code {
+    background-color: #2f3237 !important;
+    color: #dcdcdc !important;
+    border-radius: 4px !important;
+    padding: 2px 5px !important;
+    white-space: break-spaces !important;
+}
+
+/* Headings stand out with structure and minimal spacing adjustments */
+h1, h2, h3, h4, h5, h6 {
+    color: #ffffff !important;
+    border-bottom: 1px solid #333 !important;
+    padding-bottom: 1px !important;
+    margin-top: 6px !important;
+    margin-bottom: 4px !important;
+}
+
+/* Hyperlinks use a subtle blue tone matching dark theme style */
+a {
+    color: #6ca8ff !important;
+}
+
+/* Table design stabilizes layout and ensures consistent cell distribution */
+table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    table-layout: fixed !important;
+}
+
+/* Blockquotes highlight referenced text with color and clear visual anchors */
+blockquote {
+    border-left: 4px solid #4a90e2 !important;
+    padding-left: 12px !important;
+    color: #c7c7c7 !important;
+}
+
+/* Scrollbars use modern dark styling with rounded thumb edges */
+::-webkit-scrollbar {
+    width: 8px !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #4a4d52 !important;
+    border-radius: 4px !important;
+}

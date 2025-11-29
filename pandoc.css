@@ -1,0 +1,80 @@
+/* TEXT + NEWLINE PRESERVATION */
+body, p, li, td, th {
+    white-space: pre-wrap !important; /* <-- preserves newlines */
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+
+    color: #e2e2e2 !important;
+}
+
+/* Match PyCharm dark mode background */
+body {
+    background-color: #1e1f22 !important;
+    max-width: 960px !important;
+    margin: 0 auto !important;
+}
+
+/* CODE BLOCKS */
+pre {
+    white-space: pre !important; /* keep code blocks unwrapped */
+    overflow-x: auto !important;
+
+    background-color: #2a2d31 !important;
+    border: 1px solid #3b3f45 !important;
+    border-radius: 6px !important;
+
+    padding: 14px !important;
+    font-size: 0.95em !important;
+    color: #e6e6e6 !important;
+}
+
+/* Inline code */
+code {
+    background-color: #2f3237 !important;
+    color: #dcdcdc !important;
+    border-radius: 4px !important;
+    padding: 2px 5px !important;
+    white-space: break-spaces !important;
+}
+
+/* HEADINGS */
+h1, h2, h3, h4, h5, h6 {
+    color: #ffffff !important;
+    border-bottom: 1px solid #333 !important;
+    padding-bottom: 4px !important;
+    margin-top: 24px !important;
+    margin-bottom: 12px !important;
+}
+
+/* Links */
+a {
+    color: #6ca8ff !important;
+}
+
+/* Tables */
+table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+}
+
+td, th {
+    border: 1px solid #3a3d41 !important;
+    padding: 8px !important;
+    background-color: #26292d !important;
+}
+
+/* Blockquotes */
+blockquote {
+    border-left: 4px solid #4a90e2 !important;
+    padding-left: 12px !important;
+    color: #c7c7c7 !important;
+}
+
+/* Dark scrollbars */
+::-webkit-scrollbar {
+    width: 8px !important;
+}
+::-webkit-scrollbar-thumb {
+    background-color: #4a4d52 !important;
+    border-radius: 4px !important;
+}
