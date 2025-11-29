@@ -1,6 +1,7 @@
+/* Languages, Frameworks --> Markdown custom settings load this file*/
 /* TEXT + NEWLINE PRESERVATION */
 body, p, li, td, th {
-    white-space: pre-wrap !important; /* <-- preserves newlines */
+    white-space: pre-wrap !important;
     overflow-wrap: break-word !important;
     word-break: break-word !important;
 
@@ -14,9 +15,9 @@ body {
     margin: 0 auto !important;
 }
 
-/* CODE BLOCKS */
+/* Code block handling */
 pre {
-    white-space: pre !important; /* keep code blocks unwrapped */
+    white-space: pre !important;
     overflow-x: auto !important;
 
     background-color: #2a2d31 !important;
